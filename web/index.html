@@ -20,7 +20,8 @@
   .dot.up { background:var(--up) }
   .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   .item button { visibility:hidden; background:none; border:0; color:inherit; cursor:pointer; padding:0 4px }
-  .item:hover button { visibility:visible }
+  .item:hover button, .item button:focus-visible { visibility:visible }
+  button.link { background:none; border:0; color:var(--accent); cursor:pointer; font:inherit; text-align:left; padding:0 }
   .add { padding:16px 12px; border-top:1px solid var(--line); display:grid; gap:4px }
   .add button.primary { margin-top:8px }
   input,button.primary { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text) }
@@ -51,7 +52,8 @@
     <input name="url" placeholder="http://host:29202" required>
     <input name="admin_path" placeholder="Admin path (default /admin/)">
     <label><input type="checkbox" name="direct"> Open directly (no proxy)</label>
-    <button class="primary">Add service</button>
+    <button class="primary" id="submit">Add service</button>
+    <button type="button" class="link" id="cancel" hidden>Cancel edit</button>
     <div id="err"></div>
   </form>
 </aside>
@@ -79,16 +81,18 @@ function render() {
   for (const s of services) {
     const d = document.createElement('div');
     d.className = 'item' + (s.id === selected ? ' sel' : '');
-    d.innerHTML = '<span class="dot"></span><span class="name"></span><span class="tag"></span><button title="Remove">✕</button>';
+    d.innerHTML = '<span class="dot"></span><span class="name"></span><span class="tag"></span><button class="edit" title="Edit" aria-label="Edit">✎</button><button class="del" title="Remove" aria-label="Remove">✕</button>';
     const tag = d.querySelector('.tag'); const found = s.kind === 'container' || s.kind === 'compose'; tag.textContent = found ? s.kind : ''; tag.hidden = !found;
     d.querySelector('.dot').classList.toggle('up', s.up);
     d.querySelector('.name').textContent = s.name;
     d.onclick = () => select(s.id);
-    d.querySelector('button').onclick = async e => {
+    d.querySelector('.edit').onclick = e => { e.stopPropagation(); startEdit(s); };
+    d.querySelector('.del').onclick = async e => {
       e.stopPropagation();
       if (!confirm(`Remove ${s.name}?`)) return;
       await api(`/api/services/${s.id}`, {method: 'DELETE'});
       if (selected === s.id) select(null);
+      if (editing === s.id) stopEdit();
       refresh();
     };
     list.append(d);
@@ -173,11 +177,29 @@ $('#form').onsubmit = async e => {
   try {
     const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
     if (f.get('admin_path')) body.admin_path = f.get('admin_path');
-    const s = await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-    e.target.reset(); $('#err').textContent = '';
+    const url = editing ? `/api/services/${editing}` : '/api/services';
+    const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    stopEdit();
     await refresh(); select(s.id);
   } catch (x) { $('#err').textContent = x.message; }
 };
+
+// Edit mode: the add form is filled with the service's values; submit sends PUT instead of POST.
+let editing = null;
+function startEdit(s) {
+  editing = s.id;
+  const f = $('#form');
+  f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct;
+  f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path;
+  $('#submit').textContent = 'Save changes'; $('#cancel').hidden = false; $('#err').textContent = '';
+  f.name.focus();
+}
+function stopEdit() {
+  editing = null;
+  $('#form').reset();
+  $('#submit').textContent = 'Add service'; $('#cancel').hidden = true; $('#err').textContent = '';
+}
+$('#cancel').onclick = stopEdit;
 
 refresh().then(() => { try { const id = localStorage.getItem('hub.sel'); if (services.some(s => s.id === id)) select(id); } catch {} });
 setInterval(refresh, 15000);

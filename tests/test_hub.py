@@ -131,3 +131,12 @@ def test_match_finds_container_or_compose_by_published_port():
     assert DockerControl._info(kind, members)["state"] == "partial"
     assert DockerControl._match(allc, 29300) == ("container", [solo])
     assert DockerControl._match(allc, 1) == ("missing", [])
+
+
+async def test_edit_service(hub):
+    sid = (await hub.post("/api/services", json={"name": "a", "url": "http://x:1"})).json()["id"]
+    r = await hub.put(f"/api/services/{sid}", json={"name": "b", "url": "http://y:2/", "admin_path": "ui", "direct": True})
+    assert r.json() == {"id": sid, "name": "b", "url": "http://y:2", "admin_path": "/ui", "direct": True}
+    assert (await hub.get("/api/services")).json()[0]["name"] == "b"
+    assert (await hub.put(f"/api/services/{sid}", json={"name": "b", "url": "nope"})).status_code == 422
+    assert (await hub.put("/api/services/missing", json={"name": "b", "url": "http://y:2"})).status_code == 404
