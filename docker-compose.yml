@@ -1,0 +1,17 @@
+name: servicehub
+
+services:
+  servicehub:
+    build: .
+    image: servicehub:latest
+    restart: unless-stopped
+    environment:
+      HUB_ADMIN_PASSWORD: ${HUB_ADMIN_PASSWORD:-}  # required for Start/Stop/Restart; empty = control disabled
+    ports: ["29880:29880"]
+    extra_hosts: ["host.docker.internal:host-gateway"]  # register host services as http://host.docker.internal:<port>
+    volumes:
+      - servicehub_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock  # start/stop/restart registered containers
+
+volumes:
+  servicehub_data:

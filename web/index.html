@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ServiceHub</title>
+<style>
+  :root { --bg:#fff; --panel:#f4f5f7; --line:#d9dce1; --text:#1b1d21; --mute:#6b7280; --accent:#2563eb; --on-accent:#fff; --up:#16a34a; --down:#dc2626; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14161a; --panel:#1c1f25; --line:#2c3038; --text:#e6e8ec; --mute:#9aa1ad; --accent:#60a5fa; --on-accent:#0b1220; } }
+  * { box-sizing:border-box }
+  [hidden] { display:none !important }
+  body { margin:0; height:100vh; display:flex; font:14px system-ui,sans-serif; background:var(--bg); color:var(--text) }
+  aside { width:260px; flex:none; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column }
+  aside h1 { font-size:15px; margin:0; padding:18px 16px; border-bottom:1px solid var(--line) }
+  #list { flex:1; overflow:auto; padding:8px }
+  .item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:6px; cursor:pointer }
+  .item:hover { background:var(--line) }
+  .item.sel { background:var(--accent); color:var(--on-accent) }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--down); flex:none }
+  .dot.up { background:var(--up) }
+  .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .item button { visibility:hidden; background:none; border:0; color:inherit; cursor:pointer; padding:0 4px }
+  .item:hover button { visibility:visible }
+  .add { padding:16px 12px; border-top:1px solid var(--line); display:grid; gap:4px }
+  .add button.primary { margin-top:8px }
+  input,button.primary { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text) }
+  button.primary { background:var(--accent); color:var(--on-accent); border-color:var(--accent); cursor:pointer }
+  label { font-size:12px; color:var(--mute); display:flex; gap:6px; align-items:center }
+  main { flex:1; display:flex; flex-direction:column; min-width:0 }
+  #bar { padding:10px 18px; border-bottom:1px solid var(--line); color:var(--mute); display:flex; gap:12px; align-items:center }
+  #bar a { color:var(--accent) }
+  #bar .ctl { margin-left:auto; display:flex; gap:6px; align-items:center }
+  #bar .ctl button { font:inherit; padding:3px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text); cursor:pointer }
+  #bar .ctl button:disabled { opacity:.5; cursor:wait }
+  .tag { font-size:11px; padding:1px 6px; border-radius:9px; border:1px solid currentColor; opacity:.8; flex:none }
+  #warn { margin:8px 14px 0; padding:8px 12px; border:1px solid #d97706; border-radius:6px; background:color-mix(in srgb,#d97706 14%,var(--bg)); display:flex; gap:10px; align-items:flex-start }
+  #warn span { flex:1 }
+  #warn button { background:none; border:0; color:inherit; cursor:pointer; font-size:16px; line-height:1 }
+  iframe { flex:1; border:0; width:100%; background:var(--bg) }
+  #empty { margin:auto; color:var(--mute) }
+  #err { color:var(--down); font-size:12px; min-height:1em }
+  @media (max-width:700px) { aside { width:180px } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>ServiceHub</h1>
+  <div id="list"></div>
+  <form class="add" id="form">
+    <input name="name" placeholder="Name" required>
+    <input name="url" placeholder="http://host:29202" required>
+    <input name="admin_path" placeholder="Admin path (default /admin/)">
+    <label><input type="checkbox" name="direct"> Open directly (no proxy)</label>
+    <button class="primary">Add service</button>
+    <div id="err"></div>
+  </form>
+</aside>
+<main>
+  <div id="bar" hidden><span id="title"></span><a id="pop" target="_blank" rel="noopener">open in tab</a>
+    <span class="ctl" id="ctl" hidden><span class="tag" id="kind"></span><span id="state"></span>
+      <button data-act="start">Start</button><button data-act="stop">Stop</button><button data-act="restart">Restart</button></span></div>
+  <div id="empty">Select a service</div>
+  <div id="warn" role="alert" hidden><span id="warnText"></span><button id="warnClose" title="Close" aria-label="Close warning">✕</button></div>
+  <iframe id="frame" hidden></iframe>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let services = [], selected = null;
+const src = s => (s.direct ? s.url : `/s/${s.id}`) + s.admin_path;
+
+async function api(path, opt) {
+  const r = await fetch(path, opt);
+  if (!r.ok) { const d = (await r.json().catch(() => ({}))).detail; throw Object.assign(new Error(typeof d === 'string' ? d : d?.[0]?.msg || r.statusText), {status: r.status}); }
+  return r.status === 204 ? null : r.json();
+}
+
+function render() {
+  const list = $('#list'); list.textContent = '';
+  for (const s of services) {
+    const d = document.createElement('div');
+    d.className = 'item' + (s.id === selected ? ' sel' : '');
+    d.innerHTML = '<span class="dot"></span><span class="name"></span><span class="tag"></span><button title="Remove">✕</button>';
+    const tag = d.querySelector('.tag'); const found = s.kind === 'container' || s.kind === 'compose'; tag.textContent = found ? s.kind : ''; tag.hidden = !found;
+    d.querySelector('.dot').classList.toggle('up', s.up);
+    d.querySelector('.name').textContent = s.name;
+    d.onclick = () => select(s.id);
+    d.querySelector('button').onclick = async e => {
+      e.stopPropagation();
+      if (!confirm(`Remove ${s.name}?`)) return;
+      await api(`/api/services/${s.id}`, {method: 'DELETE'});
+      if (selected === s.id) select(null);
+      refresh();
+    };
+    list.append(d);
+  }
+}
+
+function select(id) {
+  selected = id;
+  const s = services.find(x => x.id === id);
+  $('#frame').hidden = $('#bar').hidden = !s;
+  if (!s) $('#warn').hidden = true;
+  $('#empty').hidden = !!s;
+  if (s) {
+    $('#title').textContent = `${s.name} — ${s.url}`;
+    $('#pop').href = $('#frame').src = src(s);
+    showCtl(s); showWarn(s);
+  } else $('#frame').removeAttribute('src');
+  localStorage.setItem('hub.sel', id || '');
+  render();
+}
+
+function showCtl(s) {
+  const found = s.kind === 'container' || s.kind === 'compose';
+  $('#ctl').hidden = !found;
+  $('#state').textContent = s.state || '';
+  $('#kind').textContent = found ? s.kind : '';
+  $('#kind').hidden = !found;
+}
+
+// Shown every time a service backed by a container is selected; the user can close it for that view.
+function showWarn(s) {
+  const list = (s.members || []).join(', ');
+  const text = s.kind === 'compose'
+    ? `Start, Stop and Restart apply to every container of compose project "${s.project}" (${list}). This can include helpers such as Ollama or a load balancer, not just the API.`
+    : s.kind === 'container' ? `Start, Stop and Restart act on container "${list}". Stopping it makes this service unavailable until started again.` : '';
+  $('#warnText').textContent = text;
+  $('#warn').hidden = !text;
+}
+$('#warnClose').onclick = () => $('#warn').hidden = true;
+
+async function refresh() {
+  services = await api('/api/services');
+  render();
+  const s = services.find(x => x.id === selected);
+  if (s) showCtl(s);
+}
+
+// Password is asked only here, kept for this tab, and re-asked after a 401.
+async function control(s, act) {
+  const cfg = await api('/api/config');
+  if (!cfg.control_enabled) throw new Error('Control disabled: set HUB_ADMIN_PASSWORD on the hub.');
+  for (let tries = 0; tries < 3; tries++) {
+    let pw = sessionStorage.getItem('hub.pw');
+    if (!pw) { pw = prompt('Admin password'); if (pw === null) throw new Error('cancelled'); }
+    try {
+      const r = await api(`/api/services/${s.id}/${act}`, {method: 'POST', headers: {'X-Hub-Password': pw}});
+      sessionStorage.setItem('hub.pw', pw);
+      return r;
+    } catch (x) {
+      if (x.status !== 401) throw x;
+      sessionStorage.removeItem('hub.pw');
+    }
+  }
+  throw new Error('wrong password');
+}
+
+$('#ctl').onclick = async e => {
+  const act = e.target.dataset.act, s = services.find(x => x.id === selected);
+  if (!act || !s || (act !== 'start' && !confirm(`${act} ${s.name}?`))) return;
+  const btns = $('#ctl').querySelectorAll('button');
+  btns.forEach(b => b.disabled = true);
+  try { await control(s, act); }
+  catch (x) { if (x.message !== 'cancelled') alert(x.message); }
+  btns.forEach(b => b.disabled = false);
+  refresh();
+  if (act !== 'stop') $('#frame').src = src(s); // reload admin once the service is back
+};
+
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
+    if (f.get('admin_path')) body.admin_path = f.get('admin_path');
+    const s = await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    e.target.reset(); $('#err').textContent = '';
+    await refresh(); select(s.id);
+  } catch (x) { $('#err').textContent = x.message; }
+};
+
+refresh().then(() => { try { const id = localStorage.getItem('hub.sel'); if (services.some(s => s.id === id)) select(id); } catch {} });
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
