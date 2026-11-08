@@ -37,6 +37,18 @@
   #warn { margin:8px 14px 0; padding:8px 12px; border:1px solid #d97706; border-radius:6px; background:color-mix(in srgb,#d97706 14%,var(--bg)); display:flex; gap:10px; align-items:flex-start }
   #warn span { flex:1 }
   #warn button { background:none; border:0; color:inherit; cursor:pointer; font-size:16px; line-height:1 }
+  #discBtn { margin:6px 6px 0; padding:8px 10px; border-radius:6px; cursor:pointer; text-align:left; font:inherit; color:var(--text); background:none; border:1px dashed var(--line) }
+  #discBtn:hover, #discBtn.sel { background:var(--line) }
+  #discover { flex:1; overflow:auto; padding:16px 20px }
+  #discover h2 { margin:0 0 4px; font-size:16px }
+  #discover .hint { color:var(--mute); margin:0 0 14px }
+  #discover .tools { display:flex; gap:14px; align-items:center; margin-bottom:12px }
+  #discover .row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line) }
+  #discover .row .name { flex:1; min-width:0 }
+  #discover .row small { color:var(--mute) }
+  #discover button { font:inherit; padding:4px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text); cursor:pointer }
+  #discover button.add { background:var(--accent); color:var(--on-accent); border-color:var(--accent) }
+  #discover button:disabled { opacity:.55; cursor:default }
   iframe { flex:1; border:0; width:100%; background:var(--bg) }
   #empty { margin:auto; color:var(--mute) }
   #err { color:var(--down); font-size:12px; min-height:1em }
@@ -46,6 +58,7 @@
 <body>
 <aside>
   <h1>ServiceHub</h1>
+  <button id="discBtn" type="button">＋ Discover on this host</button>
   <div id="list"></div>
   <form class="add" id="form">
     <input name="name" placeholder="Name" required>
@@ -64,6 +77,12 @@
   <div id="empty">Select a service</div>
   <div id="warn" role="alert" hidden><span id="warnText"></span><button id="warnClose" title="Close" aria-label="Close warning">✕</button></div>
   <iframe id="frame" hidden></iframe>
+  <section id="discover" hidden>
+    <h2>Discover on this host</h2>
+    <p class="hint">Docker containers that publish a port on this machine. Add puts one in your list.</p>
+    <div class="tools"><label><input type="checkbox" id="onlyHttp" checked> Only services that answer /health</label><button id="rescan" type="button">Rescan</button></div>
+    <div id="found"></div>
+  </section>
 </main>
 <script>
 const $ = s => document.querySelector(s);
@@ -101,6 +120,7 @@ function render() {
 
 function select(id) {
   selected = id;
+  $('#discover').hidden = true; $('#discBtn').classList.remove('sel');
   const s = services.find(x => x.id === id);
   $('#frame').hidden = $('#bar').hidden = !s;
   if (!s) $('#warn').hidden = true;
@@ -113,6 +133,44 @@ function select(id) {
   localStorage.setItem('hub.sel', id || '');
   render();
 }
+
+async function scan() {
+  const box = $('#found'); box.textContent = 'Scanning…';
+  try {
+    const rows = await api('/api/discover');
+    const only = $('#onlyHttp').checked;
+    const shown = rows.filter(r => !only || r.healthy || r.state !== 'running' || r.added);
+    box.textContent = '';
+    if (!shown.length) box.textContent = only ? 'Nothing found. Untick the filter to see every published port.' : 'No containers publish a port.';
+    for (const r of shown) {
+      const d = document.createElement('div'); d.className = 'row';
+      d.innerHTML = '<span class="dot"></span><span class="name"><span></span><br><small></small></span><span class="tag"></span><button></button>';
+      d.querySelector('.dot').classList.toggle('up', r.healthy);
+      d.querySelector('.name span').textContent = r.name;
+      d.querySelector('small').textContent = `${r.url} · ${r.state}${r.kind === 'compose' ? ' · ' + r.members.length + ' containers' : ''}`;
+      d.querySelector('.tag').textContent = r.kind;
+      const b = d.querySelector('button');
+      b.textContent = r.added ? 'Added' : 'Add'; b.disabled = r.added; b.classList.toggle('add', !r.added);
+      b.onclick = async () => {
+        b.disabled = true;
+        try {
+          const s = await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: r.name, url: r.url})});
+          b.textContent = 'Added'; b.classList.remove('add');
+          await refresh();
+        } catch (x) { b.disabled = false; alert(x.message); }
+      };
+      box.append(d);
+    }
+  } catch (x) { box.textContent = x.message; }
+}
+function openDiscover() {
+  select(null);
+  $('#empty').hidden = true; $('#discover').hidden = false; $('#discBtn').classList.add('sel');
+  scan();
+}
+$('#discBtn').onclick = openDiscover;
+$('#rescan').onclick = scan;
+$('#onlyHttp').onchange = scan;
 
 function showCtl(s) {
   const found = s.kind === 'container' || s.kind === 'compose';

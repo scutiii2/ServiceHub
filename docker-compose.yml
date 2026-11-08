@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       HUB_ADMIN_PASSWORD: ${HUB_ADMIN_PASSWORD:-}  # required for Start/Stop/Restart; empty = control disabled
+      HUB_DOCKER_HOST: ${HUB_DOCKER_HOST:-host.docker.internal}
     ports: ["29880:29880"]
     extra_hosts: ["host.docker.internal:host-gateway"]  # register host services as http://host.docker.internal:<port>
     volumes:

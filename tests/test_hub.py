@@ -2,7 +2,7 @@ import httpx
 import pytest
 from fastapi import FastAPI, HTTPException, Response
 
-from app import DockerControl, Registry, create_app
+from app import PORT, DockerControl, Registry, create_app
 
 # Fake upstream service: /health, /admin/ (html), /echo (POST body), redirect.
 upstream = FastAPI()
@@ -38,6 +38,10 @@ class FakeControl(DockerControl):
         kind, state = self.state.get(port, ("missing", "missing"))
         return {"kind": kind, "state": state, "members": ["web"] if kind != "missing" else [],
                 "project": "proj" if kind == "compose" else None}
+
+    async def discover(self):
+        return [{"name": "proj", "port": 1, **self._info(1)}, {"name": "solo", "port": 7, "kind": "container",
+                "state": "exited", "members": ["solo"], "project": None}]
 
     async def infos(self, ports):
         return {p: self._info(p) for p in ports}
@@ -116,7 +120,7 @@ class FakeContainer:
     def __init__(self, name, ports=(), project=None, status="running"):
         self.name, self.status = name, status
         self.labels = {DockerControl.PROJECT: project} if project else {}
-        self.attrs = {"HostConfig": {"PortBindings": {f"{p}/tcp": [{"HostPort": str(p)}] for p in ports}}}
+        self.attrs = {"HostConfig": {"PortBindings": {f"{p}/tcp": [{"HostIp": "", "HostPort": str(p)}] for p in ports}}}
 
 
 def test_match_finds_container_or_compose_by_published_port():
@@ -140,3 +144,23 @@ async def test_edit_service(hub):
     assert (await hub.get("/api/services")).json()[0]["name"] == "b"
     assert (await hub.put(f"/api/services/{sid}", json={"name": "b", "url": "nope"})).status_code == 422
     assert (await hub.put("/api/services/missing", json={"name": "b", "url": "http://y:2"})).status_code == 404
+
+
+async def test_discover_lists_unadded_first_and_marks_added(hub):
+    rows = (await hub.get("/api/discover")).json()
+    assert [(r["name"], r["added"], r["healthy"], r["url"]) for r in rows] == [
+        ("proj", False, True, "http://host.docker.internal:1"), ("solo", False, False, "http://host.docker.internal:7")]
+    await hub.post("/api/services", json={"name": "proj", "url": "http://host.docker.internal:1"})
+    rows = (await hub.get("/api/discover")).json()
+    assert [(r["name"], r["added"]) for r in rows] == [("solo", False), ("proj", True)]
+
+
+def test_candidates_group_compose_and_skip_loopback_and_hub_port():
+    lb = FakeContainer("svc_lb", [29200], "svc")
+    api = FakeContainer("svc_api_1", project="svc")
+    solo = FakeContainer("solo", [29300])
+    local = FakeContainer("localonly", [5432])
+    local.attrs["HostConfig"]["PortBindings"]["5432/tcp"][0]["HostIp"] = "127.0.0.1"
+    hub_self = FakeContainer("servicehub", [PORT])
+    got = DockerControl._candidates([lb, api, solo, local, hub_self])
+    assert sorted((c["name"], c["port"], c["kind"]) for c in got) == [("solo", 29300, "container"), ("svc", 29200, "compose")]

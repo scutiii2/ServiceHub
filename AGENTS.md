@@ -19,3 +19,4 @@ This file is the one instruction file for every coding agent; `CLAUDE.md` only i
 - No websocket proxying. Add it only if a service admin needs one.
 - Deploy: same flow as the tool services. `py tools\publish_live.py` pushes only the deploy paths to the `live` branch; the device clones `live` and runs `docker compose up -d --build`. `run.bat deploy` also copies `.env`. Add a path to `DEPLOY_PATHS` when the image needs a new file. Details: `deployment.md`.
 - Commit with the noreply author email `214214011+scutiii2@users.noreply.github.com` (another address is rejected on push). Push `main`, then run `py tools\publish_live.py`.
+- Discover (`GET /api/discover`): lists containers with published host ports from the Docker socket (loopback-only bindings and the hub's own port skipped), probes `/health` from the hub, adds via the normal `POST /api/services`. Open to anyone like adding a service (LAN only).

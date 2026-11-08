@@ -25,6 +25,8 @@ DATA_FILE = Path(os.environ.get("HUB_DATA", "data/services.json"))
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 PORT = int(os.environ.get("HUB_PORT", "29880"))
 ADMIN_PASSWORD = os.environ.get("HUB_ADMIN_PASSWORD", "")  # guards start/stop/restart only; empty = control disabled
+DOCKER_HOST = os.environ.get("HUB_DOCKER_HOST", "host.docker.internal")  # how this container reaches ports published on the host
+PROBE_TIMEOUT = 3.0
 HEALTH_TIMEOUT = 6.0  # MiniCPM /health takes ~2 s while Ollama is down
 HOP = {"connection", "keep-alive", "transfer-encoding", "te", "upgrade", "proxy-authorization",
        "proxy-authenticate", "trailers", "host", "content-length"}
@@ -104,6 +106,32 @@ class DockerControl:
             return {p: self._info(*self._match(allc, p)) for p in ports}
         except (HTTPException, DockerException):
             return {p: {"kind": "unknown", "state": "unknown", "members": [], "project": None} for p in ports}
+
+    @classmethod
+    def _candidates(cls, allc: list) -> list[dict]:
+        """One entry per (compose project or container, published host port) that the host's network can reach."""
+        seen: dict[tuple, dict] = {}
+        for c in allc:
+            project = c.labels.get(cls.PROJECT)
+            for bindings in (c.attrs["HostConfig"].get("PortBindings") or {}).values():
+                for b in bindings or []:
+                    port = int(b["HostPort"]) if b.get("HostPort", "").isdigit() else 0
+                    if not port or port == PORT or b.get("HostIp", "") not in ("", "0.0.0.0", "::"):
+                        continue  # loopback-only or unpublished ports are not reachable from another container
+                    key = (project or c.name, port)
+                    if key not in seen:
+                        kind, members = cls._match(allc, port)
+                        seen[key] = {"name": project or c.name, "port": port, **cls._info(kind, members)}
+        return list(seen.values())
+
+    def _discover(self) -> list[dict]:
+        return self._candidates(self._client().containers.list(all=True))
+
+    async def discover(self) -> list[dict]:
+        try:
+            return await asyncio.to_thread(self._discover)
+        except DockerException as e:
+            raise HTTPException(503, f"Docker unreachable: {e}")
 
     def _act(self, port: int, action: str) -> dict:
         client = self._client()
@@ -205,6 +233,25 @@ def create_app(registry: Registry | None = None, client: httpx.AsyncClient | Non
         )
         none = {"kind": None, "state": None, "members": [], "project": None}
         return [{**r, **infos.get(service_port(r), none)} for r in rows]
+
+    @app.get("/api/discover")
+    async def discover():
+        """Containers on this Docker host that publish a port, with a /health probe, ready to add."""
+        found = await ctl.discover()
+        have = {service_port(x) for x in reg.load()}
+
+        async def probe(c: dict) -> dict:
+            url = f"http://{DOCKER_HOST}:{c['port']}"
+            healthy = False
+            if c["state"] == "running":
+                try:
+                    healthy = (await http.get(url + "/health", timeout=PROBE_TIMEOUT)).status_code == 200
+                except httpx.HTTPError:
+                    pass
+            return {**c, "url": url, "healthy": healthy, "added": c["port"] in have}
+
+        rows = await asyncio.gather(*(probe(c) for c in found))
+        return sorted(rows, key=lambda r: (r["added"], not r["healthy"], r["name"]))
 
     @app.get("/api/config")
     async def config():

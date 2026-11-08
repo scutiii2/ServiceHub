@@ -3,6 +3,7 @@
 Central admin UI for the model and tool services. Register each service by URL; click it to open its admin page inside the hub.
 
 - Register: name + base URL (e.g. `http://192.168.1.10:29202`). Admin path defaults to `/admin/`.
+- Discover: the "Discover on this host" button lists Docker containers that publish a port (one row per compose project), probes `/health`, and adds one with a click. URLs use `HUB_DOCKER_HOST` (default `host.docker.internal`).
 - Edit: the ✎ button on a sidebar row loads its values into the form; "Save changes" updates it.
 - Health dot: `GET <url>/health`, refreshed every 15 s.
 - Default mode proxies through the hub (`/s/<id>/...`), so the browser only needs the hub port. Tick "Open directly" to iframe the service URL itself.
@@ -20,4 +21,4 @@ uv run python src/app.py   # http://localhost:29880
 See [deployment.md](deployment.md): publish to the `live` branch with `run.bat deploy`, clone it on the device, `docker compose up -d --build`, then create one Zima app pointing at `http://<zima-ip>:29880`. Register services by the device's LAN IP, or `http://host.docker.internal:<port>` for services on the same Docker host.
 
 ## Env
-`HUB_PORT` (29880), `HUB_DATA` (registry path), `HUB_ADMIN_PASSWORD` (control password).
+`HUB_PORT` (29880), `HUB_DATA` (registry path), `HUB_ADMIN_PASSWORD` (control password), `HUB_DOCKER_HOST` (host name containers use to reach published ports).
