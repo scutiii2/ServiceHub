@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ServiceHub</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg:#fbfbfc; --surface:#fff; --sunk:#f3f4f6; --line:#e7e9ee; --line-strong:#d5d9e0;
+    --text:#171a21; --mute:#5b6475; --accent:#3451d1; --on-accent:#fff; --accent-soft:#eef1fd;
+    --up:#1a7f4b; --down:#c23a3a; --idle:#a3abba;
+    --warn-bg:#fff6e5; --warn-line:#f0d9a8; --warn-text:#6b4200;
+    --pop:0 12px 32px -8px rgb(23 26 33 / .18), 0 2px 6px rgb(23 26 33 / .06);
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark;
+    --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
+    --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); } }
+  :root[data-theme="dark"] { color-scheme:dark;
+    --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
+    --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); }
+
+  * { box-sizing:border-box }
+  [hidden] { display:none !important }
+  html,body { height:100% }
+  body { margin:0; display:flex; font:14px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased }
+  ::selection { background:var(--accent); color:var(--on-accent) }
+  * { scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px }
+  button,input { font:inherit; color:inherit }
+  button { cursor:pointer }
+  svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex:none }
+
+  /* rail */
+  aside { width:248px; flex:none; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:20px 12px 14px; gap:18px; z-index:5 }
+  .brand { display:flex; align-items:center; gap:10px; padding:0 8px; font-weight:650; font-size:15px; letter-spacing:-.01em }
+  .brand i { width:22px; height:22px; border-radius:7px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
+  .brand i svg { width:13px; height:13px; stroke-width:2 }
+  .brand .theme { margin-left:auto }
+  .nav { display:grid; gap:2px }
+  .nav button { display:flex; align-items:center; gap:10px; padding:8px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav button:hover { background:var(--sunk); color:var(--text) }
+  .nav button.on { background:var(--accent-soft); color:var(--accent) }
+  .group { font-size:12px; color:var(--mute); padding:0 8px; margin:2px 0 -8px }
+  #list { flex:1; overflow:auto; display:grid; gap:2px; align-content:start; margin:0 -4px; padding:0 4px }
+  .item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; position:relative; border:0; background:none; text-align:left; width:100% }
+  .item:hover { background:var(--sunk) }
+  .item.sel { background:var(--accent-soft) }
+  .item.sel .name { color:var(--accent); font-weight:600 }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--idle); flex:none }
+  .dot.up { background:var(--up); box-shadow:0 0 0 3px color-mix(in srgb,var(--up) 18%,transparent) }
+  .dot.down { background:var(--down); box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 16%,transparent) }
+  .dot.part { background:#d9951a; box-shadow:0 0 0 3px color-mix(in srgb,#d9951a 20%,transparent) }
+  .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .tag { font-size:11px; color:var(--mute); background:var(--sunk); padding:1px 7px; border-radius:99px; flex:none }
+  .item.sel .tag { background:var(--surface) }
+  .foot { font-size:12px; color:var(--mute); padding:0 8px }
+
+  .icon-btn { width:30px; height:30px; display:grid; place-items:center; border:0; background:none; border-radius:8px; color:var(--mute) }
+  .icon-btn:hover { background:var(--sunk); color:var(--text) }
+
+  /* main */
+  main { flex:1; min-width:0; display:flex; flex-direction:column }
+  .bar { display:flex; align-items:center; gap:14px; padding:14px 24px 12px 28px; min-height:64px }
+  .bar .menu { display:none }
+  .ident { min-width:0; display:grid }
+  .ident h1 { margin:0; font-size:17px; font-weight:650; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .ident span { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .pips { display:flex; align-items:center; gap:8px; padding:5px 11px; background:var(--sunk); border-radius:99px; font-size:12px; color:var(--mute); flex:none }
+  .pips b { display:flex; gap:4px }
+  .pips b i { width:8px; height:8px; border-radius:3px; background:var(--idle) }
+  .pips b i.up { background:var(--up) } .pips b i.down { background:var(--down) } .pips b i.part { background:#d9951a }
+  .spacer { flex:1 }
+  .acts { display:flex; align-items:center; gap:6px }
+  .btn { display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border:1px solid var(--line-strong); background:var(--surface); border-radius:8px; transition:background .15s, border-color .15s }
+  .btn:hover { background:var(--sunk) }
+  .btn:disabled { opacity:.5; cursor:default }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+  .btn.primary:hover { background:color-mix(in srgb,var(--accent) 88%,var(--text)) }
+  .btn.danger:hover { color:var(--down); border-color:color-mix(in srgb,var(--down) 40%,var(--line-strong)) }
+  .btn.quiet { border-color:transparent; background:none; color:var(--mute) }
+  .btn.quiet:hover { background:var(--sunk); color:var(--text) }
+
+  .warn { margin:0 24px 12px 28px; padding:11px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:12px; align-items:flex-start }
+  .warn p { margin:0; flex:1 }
+  .warn .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px }
+  .warn code { font:12px ui-monospace,"Cascadia Mono",Consolas,monospace; padding:1px 7px; border-radius:6px; background:color-mix(in srgb,var(--warn-text) 10%,transparent) }
+  .warn button { border:0; background:none; color:inherit; padding:2px; border-radius:6px; opacity:.75 }
+  .warn button:hover { opacity:1 }
+
+  .stage { flex:1; min-height:0; margin:0 24px 24px 28px; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column }
+  .stage.down { align-items:center; justify-content:center; text-align:center; gap:6px; color:var(--mute); background:var(--bg); border-style:dashed }
+  .stage.down h2 { margin:0; font-size:16px; color:var(--text); font-weight:600 }
+  .stage.down p { margin:0 0 12px }
+
+  /* synthetic embedded admin page: deliberately its own style, as a real service would be */
+  .embed { flex:1; overflow:auto; background:#f6f6f2; color:#222; font:14px/1.5 Georgia,serif; padding:28px 34px }
+  .embed h2 { font-size:21px; margin:0 0 4px } .embed small { color:#6c6c63 }
+  .embed .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin:20px 0 }
+  .embed .box { background:#fff; border:1px solid #deded4; padding:14px 16px }
+  .embed .box b { display:block; font-size:24px; font-family:system-ui,sans-serif } .embed .box span { font-size:12px; color:#6c6c63 }
+  .embed table { width:100%; border-collapse:collapse; font:13px system-ui,sans-serif; background:#fff; border:1px solid #deded4 }
+  .embed td,.embed th { padding:8px 12px; border-bottom:1px solid #ecece4; text-align:left }
+  .embed .syn { margin-top:18px; font:12px system-ui; color:#8a8a80 }
+
+  /* discover */
+  .page { flex:1; overflow:auto; padding:6px 24px 28px 28px }
+  .page-in { max-width:780px }
+  .page h1 { margin:6px 0 4px; font-size:21px; letter-spacing:-.02em }
+  .page > .page-in > p { margin:0 0 22px; color:var(--mute); max-width:62ch }
+  .tools { display:flex; align-items:center; gap:14px; margin-bottom:6px }
+  .check { display:flex; align-items:center; gap:9px; color:var(--mute); cursor:pointer }
+  .check input { accent-color:var(--accent); width:16px; height:16px; margin:0 }
+  .rows { border-top:1px solid var(--line) }
+  .row { display:flex; align-items:center; gap:14px; padding:14px 2px; border-bottom:1px solid var(--line) }
+  .row .grow { flex:1; min-width:0 }
+  .row .grow div { font-weight:550 }
+  .row .grow small { color:var(--mute); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .added { color:var(--mute); display:inline-flex; align-items:center; gap:6px; padding:6px 12px }
+
+  /* drawer */
+  .scrim { position:fixed; inset:0; background:rgb(15 17 21 / .28); z-index:20; animation:fade .2s var(--ease) }
+  .drawer { position:fixed; right:0; top:0; bottom:0; width:min(380px,100%); background:var(--surface); border-left:1px solid var(--line); box-shadow:var(--pop); z-index:21; padding:24px 24px 20px; display:flex; flex-direction:column; gap:18px; animation:slide .28s var(--ease) }
+  .drawer h2 { margin:0; font-size:17px }
+  .drawer form { display:grid; gap:16px }
+  .field { display:grid; gap:6px } .field label { font-size:12px; color:var(--mute) }
+  .field input[type=text] { padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
+  .field input:focus-visible { outline-offset:0; border-color:var(--accent) }
+  .field small { color:var(--mute) }
+  .drawer .end { display:flex; gap:8px; margin-top:auto; justify-content:flex-end }
+
+  dialog { border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--surface); color:var(--text); width:min(340px,calc(100% - 32px)); box-shadow:var(--pop) }
+  dialog::backdrop { background:rgb(15 17 21 / .32) }
+  dialog h2 { margin:0 0 4px; font-size:16px } dialog p { margin:0 0 16px; color:var(--mute) }
+  dialog input { width:100%; padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg); margin-bottom:16px }
+  dialog .end { display:flex; gap:8px; justify-content:flex-end }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:10px; z-index:30; animation:fade .25s var(--ease) }
+
+  @keyframes fade { from { opacity:0 } }
+  @keyframes slide { from { transform:translateX(24px); opacity:0 } }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important } }
+
+  @media (max-width:860px) {
+    aside { position:fixed; inset:0 auto 0 0; transform:translateX(-100%); transition:transform .25s var(--ease); box-shadow:var(--pop) }
+    aside.open { transform:none }
+    .bar { padding:12px 16px } .bar .menu { display:grid }
+    .warn { margin:0 16px 10px } .stage { margin:0 16px 16px } .page { padding:4px 16px 24px }
+    .pips span { display:none }
+  }
+  @media (max-width:560px) { .bar { flex-wrap:wrap; row-gap:8px } .ident { flex:1 } .spacer { display:none } .acts { order:3; width:100%; padding-left:40px } .ident span { display:none } .acts .btn { padding:6px 11px } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.5 3.5 2 2L5 13H3v-2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3.5v9l7-4.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v2.8h-2.8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-6.5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 16 16"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.1"/></symbol>
+  <symbol id="i-hub" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.8"/><circle cx="3" cy="4" r="1.2"/><circle cx="13" cy="4" r="1.2"/><circle cx="8" cy="13.5" r="1.2"/><path d="m4 4.8 2.7 2M12 4.8 9.3 6.8M8 9.8v2.5"/></symbol>
+</defs></svg>
+
+<aside id="rail" aria-label="Services">
+  <div class="brand"><i><svg><use href="#i-hub"/></svg></i>ServiceHub
+    <button class="icon-btn theme" id="theme" title="Toggle dark mode" aria-label="Toggle dark mode"><svg><use href="#i-theme"/></svg></button></div>
+  <nav class="nav">
+    <button id="navAdd"><svg><use href="#i-plus"/></svg>Add service</button>
+    <button id="navDisc"><svg><use href="#i-scan"/></svg>Discover on this host</button>
+  </nav>
+  <div class="group">Services</div>
+  <div id="list"></div>
+  <div class="foot">Mockup · synthetic data</div>
+</aside>
+
+<main>
+  <div class="bar">
+    <button class="icon-btn menu" id="menu" aria-label="Open services"><svg><use href="#i-menu"/></svg></button>
+    <div class="ident"><h1 id="title">ServiceHub</h1><span id="sub"></span></div>
+    <div class="pips" id="pips" hidden><b id="pipDots"></b><span id="pipText"></span></div>
+    <div class="spacer"></div>
+    <div class="acts" id="acts" hidden>
+      <button class="btn primary" data-act="start"><svg><use href="#i-play"/></svg><span>Start</span></button>
+      <button class="btn danger" data-act="stop"><svg><use href="#i-stop"/></svg><span>Stop</span></button>
+      <button class="btn" data-act="restart"><svg><use href="#i-restart"/></svg><span>Restart</span></button>
+      <button class="icon-btn" id="edit" title="Edit service" aria-label="Edit service"><svg><use href="#i-edit"/></svg></button>
+      <a class="icon-btn" id="pop" title="Open in new tab" aria-label="Open in new tab" href="#" style="text-decoration:none"><svg><use href="#i-ext"/></svg></a>
+    </div>
+  </div>
+  <div class="warn" id="warn" role="alert" hidden>
+    <svg style="margin-top:2px"><use href="#i-alert"/></svg>
+    <div style="flex:1"><p id="warnText"></p><div class="chips" id="chips"></div></div>
+    <button id="warnClose" aria-label="Close warning"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="page" id="discover" hidden>
+    <div class="page-in">
+      <h1>Discover on this host</h1>
+      <p>Docker containers publishing a port on this machine. Add puts one in your list; nothing is changed on the container.</p>
+      <div class="tools">
+        <label class="check"><input type="checkbox" id="onlyHttp" checked> Only services that answer /health</label>
+        <span class="spacer"></span>
+        <button class="btn" id="rescan"><svg><use href="#i-restart"/></svg>Rescan</button>
+      </div>
+      <div class="rows" id="found"></div>
+    </div>
+  </div>
+</main>
+
+<dialog id="pw">
+  <form method="dialog" id="pwForm">
+    <h2>Admin password</h2>
+    <p id="pwText"></p>
+    <input type="password" id="pwInput" autocomplete="off" aria-label="Admin password" required>
+    <div class="end"><button class="btn quiet" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">Confirm</button></div>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
+// All values below are synthetic.
+const SERVICES = [
+  {id:'a', name:'MiniCPM 5.2B', url:'http://host.docker.internal:29200', kind:'compose', project:'cnv_minicpm52b_model', members:[['cnv_minicpm52b_model_lb','up'],['cnv_minicpm52b_model_api_1','up'],['cnv_minicpm52b_model_ollama_1','up']]},
+  {id:'b', name:'Piper TTS', url:'http://host.docker.internal:29320', kind:'container', members:[['tts_piper_model','up']]},
+  {id:'c', name:'Whisper STT', url:'http://host.docker.internal:29300', kind:'container', members:[['stt_whisper_model','up']]},
+  {id:'d', name:'Tesseract OCR', url:'http://host.docker.internal:29260', kind:'container', members:[['ocr_tesseract_model','up']]},
+  {id:'e', name:'SGLang OCR', url:'http://host.docker.internal:29261', kind:'compose', project:'ocr_sglang_model', members:[['ocr_sglang_model_lb','up'],['ocr_sglang_model_api_1','down'],['ocr_sglang_model_api_2','up']]},
+  {id:'f', name:'Laya', url:'http://host.docker.internal:29220', kind:'container', members:[['dsc_laya_model','down']]},
+];
+const FOUND = [
+  {name:'IMG TEM', url:'http://host.docker.internal:29240', kind:'container', state:'running', healthy:true, added:false},
+  {name:'TTS Kitten2', url:'http://host.docker.internal:29321', kind:'container', state:'running', healthy:true, added:false},
+  {name:'CNV LFM3', url:'http://host.docker.internal:29201', kind:'compose', state:'running', healthy:true, n:3, added:false},
+  {name:'redis', url:'http://host.docker.internal:6379', kind:'container', state:'running', healthy:false, added:false},
+  {name:'MiniCPM 5.2B', url:'http://host.docker.internal:29200', kind:'compose', state:'running', healthy:true, n:3, added:true},
+  {name:'Piper TTS', url:'http://host.docker.internal:29320', kind:'container', state:'running', healthy:true, added:true},
+];
+let selected = null, view = 'service', editing = null, pending = null;
+const health = s => { const u = s.members.filter(m => m[1] === 'up').length; return u === s.members.length ? 'up' : u === 0 ? 'down' : 'part'; };
+const word = h => ({up:'Running', down:'Stopped', part:'Degraded'}[h]);
+const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2200); };
+
+function renderList() {
+  $('#list').innerHTML = '';
+  for (const s of SERVICES) {
+    const b = document.createElement('button');
+    b.className = 'item' + (view === 'service' && s.id === selected ? ' sel' : '');
+    b.innerHTML = `<span class="dot ${health(s)}"></span><span class="name"></span><span class="tag">${s.kind}</span>`;
+    b.querySelector('.name').textContent = s.name;
+    b.onclick = () => { select(s.id); $('#rail').classList.remove('open'); };
+    $('#list').append(b);
+  }
+  $('#navDisc').classList.toggle('on', view === 'discover');
+}
+
+function embed(s) {
+  const h = health(s);
+  if (h === 'down') return `<div class="stage down" id="stage"><h2>${s.name} is stopped</h2><p>Nothing is answering on ${s.url.replace('http://','')}.</p><button class="btn primary" data-act="start">${ICON('play')}Start ${s.kind === 'compose' ? 'project' : 'container'}</button></div>`;
+  return `<div class="stage" id="stage"><div class="embed"><h2>${s.name} admin</h2><small>Model service console</small>
+    <div class="grid"><div class="box"><b>412 ms</b><span>median latency, last hour</span></div><div class="box"><b>1,284</b><span>requests today</span></div><div class="box"><b>3.2 GB</b><span>memory in use</span></div></div>
+    <table><tr><th>Setting</th><th>Value</th></tr><tr><td>Model</td><td>${s.name}</td></tr><tr><td>Max tokens</td><td>2,048</td></tr><tr><td>Idle unload</td><td>10 min</td></tr><tr><td>Concurrency</td><td>2</td></tr></table>
+    <div class="syn">Synthetic page standing in for the service's own admin UI, which loads here through the proxy.</div></div></div>`;
+}
+
+function select(id) {
+  selected = id; view = 'service';
+  const s = SERVICES.find(x => x.id === id), h = health(s);
+  $('#discover').hidden = true;
+  $('#title').textContent = s.name; $('#sub').textContent = s.url.replace('http://', '');
+  $('#acts').hidden = $('#pips').hidden = false;
+  $('#pipDots').innerHTML = s.members.map(m => `<i class="${m[1]}" title="${m[0]}: ${m[1] === 'up' ? 'running' : 'stopped'}"></i>`).join('');
+  $('#pipText').textContent = s.kind === 'compose' ? `${word(h)} · ${s.members.filter(m => m[1]==='up').length}/${s.members.length} containers` : word(h);
+  for (const b of $('#acts').querySelectorAll('[data-act]')) {
+    const a = b.dataset.act; b.hidden = (a === 'start' && h === 'up') || (a !== 'start' && h === 'down');
+  }
+  $('#pop').href = '#';
+  const old = $('#stage'); old.outerHTML = embed(s); $('#stage').hidden = false;
+  showWarn(s); renderList();
+}
+function showWarn(s) {
+  const verb = s.kind === 'compose' ? `Start, Stop and Restart apply to every container of compose project <b>${s.project}</b>. That includes helpers such as Ollama or the load balancer, not only the API.` : `Start, Stop and Restart act on this one container. Stopping it makes ${s.name} unavailable until started again.`;
+  $('#warnText').innerHTML = verb;
+  $('#chips').innerHTML = s.members.map(m => `<code>${m[0]}</code>`).join('');
+  $('#warn').hidden = false;
+}
+$('#warnClose').onclick = () => $('#warn').hidden = true;
+
+function openDiscover() {
+  view = 'discover'; selected = null;
+  $('#title').textContent = 'Discover'; $('#sub').textContent = 'Same Docker host';
+  $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = true;
+  $('#stage').hidden = true; $('#discover').hidden = false;
+  scan(); renderList(); $('#rail').classList.remove('open');
+}
+function scan() {
+  const only = $('#onlyHttp').checked, rows = FOUND.filter(r => !only || r.healthy || r.added);
+  $('#found').innerHTML = rows.length ? '' : '<div class="row"><div class="grow" style="color:var(--mute)">Nothing found. Untick the filter to see every published port.</div></div>';
+  for (const r of rows) {
+    const d = document.createElement('div'); d.className = 'row';
+    d.innerHTML = `<span class="dot ${r.healthy ? 'up' : ''}"></span><div class="grow"><div></div><small>${r.url.replace('http://','')} · ${r.state}${r.kind === 'compose' ? ' · ' + r.n + ' containers' : ''}</small></div><span class="tag">${r.kind}</span>`;
+    d.querySelector('.grow div').textContent = r.name;
+    const b = document.createElement(r.added ? 'span' : 'button');
+    if (r.added) { b.className = 'added'; b.innerHTML = ICON('check') + 'Added'; }
+    else { b.className = 'btn primary'; b.innerHTML = ICON('plus') + 'Add'; b.onclick = () => { r.added = true; SERVICES.push({id:'n'+SERVICES.length, name:r.name, url:r.url, kind:r.kind, project:r.name.toLowerCase().replace(/\W+/g,'_'), members:[[r.name.toLowerCase().replace(/\W+/g,'_'), r.healthy ? 'up':'down']]}); toast(r.name + ' added'); scan(); renderList(); }; }
+    d.append(b); $('#found').append(d);
+  }
+}
+$('#onlyHttp').onchange = scan; $('#rescan').onclick = () => { toast('Scanned 14 containers'); scan(); };
+$('#navDisc').onclick = openDiscover;
+
+// add / edit drawer
+function drawer(s) {
+  editing = s;
+  const w = document.createElement('div');
+  w.innerHTML = `<div class="scrim"></div><section class="drawer" role="dialog" aria-label="${s ? 'Edit' : 'Add'} service">
+    <h2>${s ? 'Edit service' : 'Add service'}</h2>
+    <form id="f">
+      <div class="field"><label for="n">Name</label><input id="n" type="text" required value="${s ? s.name : ''}"></div>
+      <div class="field"><label for="u">URL</label><input id="u" type="text" required placeholder="http://host.docker.internal:29202" value="${s ? s.url : ''}"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
+      <div class="field"><label for="p">Admin path</label><input id="p" type="text" placeholder="/admin/"></div>
+      <label class="check"><input type="checkbox"> Open directly, skip the proxy</label>
+    </form>
+    <div class="end"><button class="btn quiet" id="dc">Cancel</button><button class="btn primary" id="ds">${s ? 'Save changes' : 'Add service'}</button></div></section>`;
+  document.body.append(w);
+  const close = () => w.remove();
+  w.querySelector('.scrim').onclick = w.querySelector('#dc').onclick = close;
+  w.addEventListener('keydown', e => e.key === 'Escape' && close());
+  w.querySelector('#ds').onclick = () => { close(); toast(s ? 'Saved' : 'Added (mockup: not stored)'); };
+  w.querySelector('#n').focus();
+}
+$('#navAdd').onclick = () => { drawer(null); $('#rail').classList.remove('open'); };
+$('#edit').onclick = () => drawer(SERVICES.find(x => x.id === selected));
+
+// control actions: the password is the only gate
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || !selected) return;
+  const s = SERVICES.find(x => x.id === selected), act = b.dataset.act;
+  pending = act;
+  $('#pwText').textContent = `${act[0].toUpperCase() + act.slice(1)} ${s.kind === 'compose' ? s.members.length + ' containers in ' + s.project : s.members[0][0]}. Mockup password: any text.`;
+  $('#pwInput').value = ''; $('#pw').showModal();
+});
+$('#pw').addEventListener('close', () => {
+  if ($('#pw').returnValue !== 'ok') return;
+  const s = SERVICES.find(x => x.id === selected);
+  s.members.forEach(m => m[1] = pending === 'stop' ? 'down' : 'up');
+  toast(`${s.name}: ${pending} done`); select(s.id);
+});
+
+$('#menu').onclick = () => $('#rail').classList.toggle('open');
+$('#theme').onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+};
+select('a');
+</script>
+</body>
+</html>
