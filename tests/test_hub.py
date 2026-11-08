@@ -29,24 +29,24 @@ async def _g():
 
 
 class FakeControl(DockerControl):
-    """In-memory containers: no Docker needed."""
+    """In-memory containers keyed by published port: no Docker needed."""
 
     def __init__(self):
-        self.state = {"web": "running"}
+        self.state = {1: ("compose", "running")}
 
-    def _info(self, target):
-        kind = "container" if target in self.state else "missing"
-        return {"kind": kind, "state": self.state.get(target, "missing"),
-                "members": [target] if kind == "container" else []}
+    def _info(self, port):
+        kind, state = self.state.get(port, ("missing", "missing"))
+        return {"kind": kind, "state": state, "members": ["web"] if kind != "missing" else [],
+                "project": "proj" if kind == "compose" else None}
 
-    async def infos(self, targets):
-        return {t: self._info(t) for t in targets}
+    async def infos(self, ports):
+        return {p: self._info(p) for p in ports}
 
-    async def act(self, target, action):
-        if target not in self.state:
+    async def act(self, port, action):
+        if port not in self.state:
             raise HTTPException(404, "missing")
-        self.state[target] = {"start": "running", "stop": "exited", "restart": "running"}[action]
-        return self._info(target)
+        self.state[port] = (self.state[port][0], {"start": "running", "stop": "exited", "restart": "running"}[action])
+        return self._info(port)
 
 
 @pytest.fixture
@@ -89,10 +89,10 @@ PW = {"X-Hub-Password": "pw"}
 
 
 async def test_container_control_needs_password(hub):
-    sid = (await hub.post("/api/services", json={"name": "c", "url": "http://x:1", "container": "web"})).json()["id"]
-    plain = (await hub.post("/api/services", json={"name": "p", "url": "http://x:1"})).json()["id"]
+    sid = (await hub.post("/api/services", json={"name": "c", "url": "http://x:1"})).json()["id"]
+    other = (await hub.post("/api/services", json={"name": "p", "url": "http://x:2"})).json()["id"]  # no container
     rows = (await hub.get("/api/services")).json()  # listing, opening and adding need no password
-    assert [(r["kind"], r["state"]) for r in rows] == [("container", "running"), (None, None)]
+    assert [(r["kind"], r["state"]) for r in rows] == [("compose", "running"), ("missing", "missing")]
 
     assert (await hub.post(f"/api/services/{sid}/stop")).status_code == 401
     assert (await hub.post(f"/api/services/{sid}/stop", headers={"X-Hub-Password": "bad"})).status_code == 401
@@ -101,12 +101,33 @@ async def test_container_control_needs_password(hub):
     assert (await hub.post(f"/api/services/{sid}/stop", headers=PW)).json()["state"] == "exited"
     assert (await hub.post(f"/api/services/{sid}/restart", headers=PW)).json()["state"] == "running"
     assert (await hub.post(f"/api/services/{sid}/explode", headers=PW)).status_code == 404
-    assert (await hub.post(f"/api/services/{plain}/start", headers=PW)).status_code == 400
+    assert (await hub.post(f"/api/services/{other}/start", headers=PW)).status_code == 404
 
 
 async def test_control_disabled_without_password(tmp_path):
     app = create_app(Registry(tmp_path / "s.json"), httpx.AsyncClient(), FakeControl(), password="")
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://hub") as c:
-        sid = (await c.post("/api/services", json={"name": "c", "url": "http://x:1", "container": "web"})).json()["id"]
+        sid = (await c.post("/api/services", json={"name": "c", "url": "http://x:1"})).json()["id"]
         assert (await c.get("/api/config")).json() == {"control_enabled": False}
         assert (await c.post(f"/api/services/{sid}/stop", headers=PW)).status_code == 403
+
+
+class FakeContainer:
+    def __init__(self, name, ports=(), project=None, status="running"):
+        self.name, self.status = name, status
+        self.labels = {DockerControl.PROJECT: project} if project else {}
+        self.attrs = {"HostConfig": {"PortBindings": {f"{p}/tcp": [{"HostPort": str(p)}] for p in ports}}}
+
+
+def test_match_finds_container_or_compose_by_published_port():
+    lb = FakeContainer("svc_lb", [29200], "svc")
+    api = FakeContainer("svc_api_1", project="svc")
+    ollama = FakeContainer("svc_ollama", project="svc", status="exited")
+    solo = FakeContainer("solo", [29300])
+    allc = [lb, api, ollama, solo, FakeContainer("other", [29400], "other")]
+
+    kind, members = DockerControl._match(allc, 29200)
+    assert kind == "compose" and {c.name for c in members} == {"svc_lb", "svc_api_1", "svc_ollama"}
+    assert DockerControl._info(kind, members)["state"] == "partial"
+    assert DockerControl._match(allc, 29300) == ("container", [solo])
+    assert DockerControl._match(allc, 1) == ("missing", [])

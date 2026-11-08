@@ -50,7 +50,6 @@
     <input name="name" placeholder="Name" required>
     <input name="url" placeholder="http://host:29202" required>
     <input name="admin_path" placeholder="Admin path (default /admin/)">
-    <input name="container" placeholder="Container or compose project (optional)">
     <label><input type="checkbox" name="direct"> Open directly (no proxy)</label>
     <button class="primary">Add service</button>
     <div id="err"></div>
@@ -81,7 +80,7 @@ function render() {
     const d = document.createElement('div');
     d.className = 'item' + (s.id === selected ? ' sel' : '');
     d.innerHTML = '<span class="dot"></span><span class="name"></span><span class="tag"></span><button title="Remove">✕</button>';
-    const tag = d.querySelector('.tag'); tag.textContent = s.kind || ''; tag.hidden = !s.kind;
+    const tag = d.querySelector('.tag'); const found = s.kind === 'container' || s.kind === 'compose'; tag.textContent = found ? s.kind : ''; tag.hidden = !found;
     d.querySelector('.dot').classList.toggle('up', s.up);
     d.querySelector('.name').textContent = s.name;
     d.onclick = () => select(s.id);
@@ -112,18 +111,19 @@ function select(id) {
 }
 
 function showCtl(s) {
-  $('#ctl').hidden = !s.container;
+  const found = s.kind === 'container' || s.kind === 'compose';
+  $('#ctl').hidden = !found;
   $('#state').textContent = s.state || '';
-  $('#kind').textContent = s.kind || '';
-  $('#kind').hidden = !s.kind;
+  $('#kind').textContent = found ? s.kind : '';
+  $('#kind').hidden = !found;
 }
 
-// Shown every time a service with a container is selected; the user can close it for that view.
+// Shown every time a service backed by a container is selected; the user can close it for that view.
 function showWarn(s) {
-  const members = s.members?.length ? ` (${s.members.join(', ')})` : '';
+  const list = (s.members || []).join(', ');
   const text = s.kind === 'compose'
-    ? `Start, Stop and Restart apply to every container of compose project "${s.container}"${members}. This can include helpers such as Ollama or a load balancer, not just the API.`
-    : s.container ? `Start, Stop and Restart act on container "${s.container}". Stopping it makes this service unavailable until started again.` : '';
+    ? `Start, Stop and Restart apply to every container of compose project "${s.project}" (${list}). This can include helpers such as Ollama or a load balancer, not just the API.`
+    : s.kind === 'container' ? `Start, Stop and Restart act on container "${list}". Stopping it makes this service unavailable until started again.` : '';
   $('#warnText').textContent = text;
   $('#warn').hidden = !text;
 }
@@ -171,7 +171,7 @@ $('#form').onsubmit = async e => {
   e.preventDefault();
   const f = new FormData(e.target);
   try {
-    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct'), container: f.get('container')};
+    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
     if (f.get('admin_path')) body.admin_path = f.get('admin_path');
     const s = await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
     e.target.reset(); $('#err').textContent = '';

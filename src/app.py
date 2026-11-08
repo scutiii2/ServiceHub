@@ -35,7 +35,6 @@ class ServiceIn(BaseModel):
     url: str  # base URL of the service, e.g. http://192.168.1.10:29202
     admin_path: str = "/admin/"
     direct: bool = False  # True = iframe straight to the URL instead of through the hub proxy
-    container: str = ""  # Docker container name or compose project to start/stop/restart; empty = no control
 
     @field_validator("url")
     @classmethod
@@ -51,11 +50,6 @@ class ServiceIn(BaseModel):
     def _path(cls, v: str) -> str:
         return "/" + v.strip().lstrip("/")
 
-    @field_validator("container")
-    @classmethod
-    def _container(cls, v: str) -> str:
-        return v.strip()
-
     @field_validator("name")
     @classmethod
     def _name(cls, v: str) -> str:
@@ -68,12 +62,15 @@ class ServiceIn(BaseModel):
 class DockerControl:
     """Start/stop/restart containers through the mounted Docker socket, like Citadel's server_manager.
 
-    `target` is an exact container name, else a compose project (every container of it, so replicas and
-    their load balancer move together). Only targets taken from the registry reach this class.
-    The SDK is blocking, so every call runs in a worker thread.
+    Nothing is configured per service: the container is found from the service URL's port, i.e. the
+    container that publishes that host port. If it belongs to a compose project, the whole project is
+    the target (replicas and their load balancer move together). Ports are unique per service in this
+    workspace, so a port identifies one service; a service on another machine reusing a local port would
+    be matched wrongly. The SDK is blocking, so every call runs in a worker thread.
     """
 
     ACTIONS = ("start", "stop", "restart")
+    PROJECT = "com.docker.compose.project"
 
     def _client(self) -> docker.DockerClient:
         try:
@@ -81,35 +78,39 @@ class DockerControl:
         except DockerException as e:
             raise HTTPException(503, f"Docker unreachable (mount /var/run/docker.sock): {e}")
 
-    @staticmethod
-    def _resolve(client: docker.DockerClient, target: str) -> tuple[str, list]:
-        """('container', [c]) for an exact name, else ('compose', members of that project)."""
-        try:
-            return "container", [client.containers.get(target)]
-        except docker.errors.NotFound:
-            members = client.containers.list(all=True, filters={"label": f"com.docker.compose.project={target}"})
-            return ("compose" if members else "missing"), members
+    @classmethod
+    def _match(cls, allc: list, port: int) -> tuple[str, list]:
+        """('container', [c]) for the container publishing `port`, ('compose', project members) if it has one."""
+        hit = [c for c in allc
+               if any(b.get("HostPort") == str(port) for bs in (c.attrs["HostConfig"].get("PortBindings") or {}).values()
+                      for b in bs or [])]
+        if not hit:
+            return "missing", []
+        project = hit[0].labels.get(cls.PROJECT)
+        if project:
+            return "compose", [c for c in allc if c.labels.get(cls.PROJECT) == project]
+        return "container", hit[:1]
 
     @staticmethod
     def _info(kind: str, containers: list) -> dict:
         states = {c.status for c in containers}
         state = "missing" if not states else states.pop() if len(states) == 1 else "partial"
-        return {"kind": kind, "state": state, "members": sorted(c.name for c in containers)}
+        project = containers[0].labels.get(DockerControl.PROJECT) if kind == "compose" else None
+        return {"kind": kind, "state": state, "members": sorted(c.name for c in containers), "project": project}
 
-    def _infos(self, targets: list[str]) -> dict[str, dict]:
-        unknown = {"kind": "unknown", "state": "unknown", "members": []}
+    def _infos(self, ports: list[int]) -> dict[int, dict]:
         try:
-            client = self._client()
-            return {t: self._info(*self._resolve(client, t)) for t in targets}
+            allc = self._client().containers.list(all=True)  # one Docker call serves every service
+            return {p: self._info(*self._match(allc, p)) for p in ports}
         except (HTTPException, DockerException):
-            return {t: unknown for t in targets}
+            return {p: {"kind": "unknown", "state": "unknown", "members": [], "project": None} for p in ports}
 
-    def _act(self, target: str, action: str) -> dict:
+    def _act(self, port: int, action: str) -> dict:
         client = self._client()
         try:
-            kind, containers = self._resolve(client, target)
+            kind, containers = self._match(client.containers.list(all=True), port)
             if not containers:
-                raise HTTPException(404, f"no container or compose project named {target!r}")
+                raise HTTPException(404, f"no Docker container publishes port {port}")
             for c in containers:
                 getattr(c, action)()
                 c.reload()
@@ -117,11 +118,16 @@ class DockerControl:
             raise HTTPException(502, f"docker {action} failed: {e}")
         return self._info(kind, containers)
 
-    async def infos(self, targets: list[str]) -> dict[str, dict]:
-        return await asyncio.to_thread(self._infos, targets) if targets else {}
+    async def infos(self, ports: list[int]) -> dict[int, dict]:
+        return await asyncio.to_thread(self._infos, ports) if ports else {}
 
-    async def act(self, target: str, action: str) -> dict:
-        return await asyncio.to_thread(self._act, target, action)
+    async def act(self, port: int, action: str) -> dict:
+        return await asyncio.to_thread(self._act, port, action)
+
+
+def service_port(svc: dict) -> int:
+    parts = urlsplit(svc["url"])
+    return parts.port or (443 if parts.scheme == "https" else 80)
 
 
 class Registry:
@@ -195,10 +201,10 @@ def create_app(registry: Registry | None = None, client: httpx.AsyncClient | Non
         items = reg.load()
         rows, infos = await asyncio.gather(
             asyncio.gather(*(health(s) for s in items)),
-            ctl.infos([s["container"] for s in items if s.get("container")]),
+            ctl.infos(sorted({service_port(s) for s in items})),
         )
-        return [{**r, **(infos.get(r.get("container", "")) or {"kind": None, "state": None, "members": []})}
-                for r in rows]
+        none = {"kind": None, "state": None, "members": [], "project": None}
+        return [{**r, **infos.get(service_port(r), none)} for r in rows]
 
     @app.get("/api/config")
     async def config():
@@ -213,10 +219,7 @@ def create_app(registry: Registry | None = None, client: httpx.AsyncClient | Non
         if not hmac.compare_digest(request.headers.get("x-hub-password", "").encode(), secret.encode()):
             await asyncio.sleep(1)  # slows password guessing
             raise HTTPException(401, "wrong password")
-        target = reg.get(sid).get("container")
-        if not target:
-            raise HTTPException(400, "no container configured for this service")
-        return await ctl.act(target, action)
+        return await ctl.act(service_port(reg.get(sid)), action)
 
     @app.post("/api/services", status_code=201)
     async def add_service(svc: ServiceIn):

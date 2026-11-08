@@ -5,7 +5,7 @@ Central admin UI for the model and tool services. Register each service by URL; 
 - Register: name + base URL (e.g. `http://192.168.1.10:29202`). Admin path defaults to `/admin/`.
 - Health dot: `GET <url>/health`, refreshed every 15 s.
 - Default mode proxies through the hub (`/s/<id>/...`), so the browser only needs the hub port. Tick "Open directly" to iframe the service URL itself.
-- Optional `container` field (container name, or compose project name for replicas + load balancer): shows Start / Stop / Restart buttons and the container state. Needs `/var/run/docker.sock` mounted (already in `docker-compose.yml`). Not available for services running outside Docker. A tag shows `container` or `compose`; a closeable warning appears each time you select such a service (compose: it lists every container affected).
+- Start / Stop / Restart need no setup: the hub finds the Docker container that publishes the port in the service URL. If it belongs to a compose project, the whole project is the target (replicas, load balancer, Ollama). A tag shows `container` or `compose`, and a closeable warning lists every container affected each time you select the service. Needs `/var/run/docker.sock` (already in `docker-compose.yml`). Services outside Docker, or on another machine, show no controls. Ports must be unique per service.
 - Auth: only Start / Stop / Restart ask for a password (`HUB_ADMIN_PASSWORD`; empty = control disabled). Listing, opening and adding services need none.
 - Registry is stored in `HUB_DATA` (`data/services.json`; `/data/services.json` in Docker).
 
