@@ -5,89 +5,253 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ServiceHub</title>
 <style>
-  :root { --bg:#fff; --panel:#f4f5f7; --line:#d9dce1; --text:#1b1d21; --mute:#6b7280; --accent:#2563eb; --on-accent:#fff; --up:#16a34a; --down:#dc2626; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#14161a; --panel:#1c1f25; --line:#2c3038; --text:#e6e8ec; --mute:#9aa1ad; --accent:#60a5fa; --on-accent:#0b1220; } }
+
+  :root {
+    color-scheme: light;
+    --bg:#fbfbfc; --surface:#fff; --sunk:#f3f4f6; --line:#e7e9ee; --line-strong:#d5d9e0;
+    --text:#171a21; --mute:#5b6475; --accent:#3451d1; --on-accent:#fff; --accent-soft:#eef1fd;
+    --up:#1a7f4b; --down:#c23a3a; --idle:#a3abba;
+    --warn-bg:#fff6e5; --warn-line:#f0d9a8; --warn-text:#6b4200;
+    --pop:0 12px 32px -8px rgb(23 26 33 / .18), 0 2px 6px rgb(23 26 33 / .06);
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark;
+    --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
+    --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); } }
+  :root[data-theme="dark"] { color-scheme:dark;
+    --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
+    --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); }
+
   * { box-sizing:border-box }
   [hidden] { display:none !important }
-  body { margin:0; height:100vh; display:flex; font:14px system-ui,sans-serif; background:var(--bg); color:var(--text) }
-  aside { width:260px; flex:none; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column }
-  aside h1 { font-size:15px; margin:0; padding:18px 16px; border-bottom:1px solid var(--line) }
-  #list { flex:1; overflow:auto; padding:8px }
-  .item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:6px; cursor:pointer }
-  .item:hover { background:var(--line) }
-  .item.sel { background:var(--accent); color:var(--on-accent) }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--down); flex:none }
-  .dot.up { background:var(--up) }
-  .name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-  .item button { visibility:hidden; background:none; border:0; color:inherit; cursor:pointer; padding:0 4px }
-  .item:hover button, .item button:focus-visible { visibility:visible }
-  button.link { background:none; border:0; color:var(--accent); cursor:pointer; font:inherit; text-align:left; padding:0 }
-  .add { padding:16px 12px; border-top:1px solid var(--line); display:grid; gap:4px }
-  .add button.primary { margin-top:8px }
-  input,button.primary { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text) }
-  button.primary { background:var(--accent); color:var(--on-accent); border-color:var(--accent); cursor:pointer }
-  label { font-size:12px; color:var(--mute); display:flex; gap:6px; align-items:center }
-  main { flex:1; display:flex; flex-direction:column; min-width:0 }
-  #bar { padding:10px 18px; border-bottom:1px solid var(--line); color:var(--mute); display:flex; gap:12px; align-items:center }
-  #bar a { color:var(--accent) }
-  #bar .ctl { margin-left:auto; display:flex; gap:6px; align-items:center }
-  #bar .ctl button { font:inherit; padding:3px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text); cursor:pointer }
-  #bar .ctl button:disabled { opacity:.5; cursor:wait }
-  .tag { font-size:11px; padding:1px 6px; border-radius:9px; border:1px solid currentColor; opacity:.8; flex:none }
-  #warn { margin:8px 14px 0; padding:8px 12px; border:1px solid #d97706; border-radius:6px; background:color-mix(in srgb,#d97706 14%,var(--bg)); display:flex; gap:10px; align-items:flex-start }
-  #warn span { flex:1 }
-  #warn button { background:none; border:0; color:inherit; cursor:pointer; font-size:16px; line-height:1 }
-  #discBtn { margin:6px 6px 0; padding:8px 10px; border-radius:6px; cursor:pointer; text-align:left; font:inherit; color:var(--text); background:none; border:1px dashed var(--line) }
-  #discBtn:hover, #discBtn.sel { background:var(--line) }
-  #discover { flex:1; overflow:auto; padding:16px 20px }
-  #discover h2 { margin:0 0 4px; font-size:16px }
-  #discover .hint { color:var(--mute); margin:0 0 14px }
-  #discover .tools { display:flex; gap:14px; align-items:center; margin-bottom:12px }
-  #discover .row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line) }
-  #discover .row .name { flex:1; min-width:0 }
-  #discover .row small { color:var(--mute) }
-  #discover button { font:inherit; padding:4px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text); cursor:pointer }
-  #discover button.add { background:var(--accent); color:var(--on-accent); border-color:var(--accent) }
-  #discover button:disabled { opacity:.55; cursor:default }
-  iframe { flex:1; border:0; width:100%; background:var(--bg) }
-  #empty { margin:auto; color:var(--mute) }
-  #err { color:var(--down); font-size:12px; min-height:1em }
-  @media (max-width:700px) { aside { width:180px } }
+  html,body { height:100% }
+  body { margin:0; display:flex; font:14px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased }
+  ::selection { background:var(--accent); color:var(--on-accent) }
+  * { scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px }
+  button,input { font:inherit; color:inherit }
+  button { cursor:pointer }
+  svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex:none }
+
+  /* rail */
+  aside { width:248px; flex:none; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:20px 12px 14px; gap:18px; z-index:5 }
+  .brand { display:flex; align-items:center; gap:10px; padding:0 8px; font-weight:650; font-size:15px; letter-spacing:-.01em }
+  .brand i { width:22px; height:22px; border-radius:7px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
+  .brand i svg { width:13px; height:13px; stroke-width:2 }
+  .brand .theme { margin-left:auto }
+  .nav { display:grid; gap:2px }
+  .nav button { display:flex; align-items:center; gap:10px; padding:8px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav button:hover { background:var(--sunk); color:var(--text) }
+  .nav button.on { background:var(--accent-soft); color:var(--accent) }
+  .group { font-size:12px; color:var(--mute); padding:0 8px; margin:2px 0 -8px }
+  #list { flex:1; overflow:auto; display:grid; gap:2px; align-content:start; margin:0 -4px; padding:0 4px }
+  .item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; position:relative; border:0; background:none; text-align:left; width:100% }
+  .item:hover { background:var(--sunk) }
+  .item.sel { background:var(--accent-soft) }
+  .item.sel .name { color:var(--accent); font-weight:600 }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--idle); flex:none }
+  .dot.up { background:var(--up); box-shadow:0 0 0 3px color-mix(in srgb,var(--up) 18%,transparent) }
+  .dot.down { background:var(--down); box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 16%,transparent) }
+  .dot.part { background:#d9951a; box-shadow:0 0 0 3px color-mix(in srgb,#d9951a 20%,transparent) }
+  .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .tag { font-size:11px; color:var(--mute); background:var(--sunk); padding:1px 7px; border-radius:99px; flex:none }
+  .item.sel .tag { background:var(--surface) }
+  .foot { font-size:12px; color:var(--mute); padding:0 8px }
+
+  .icon-btn { width:30px; height:30px; display:grid; place-items:center; border:0; background:none; border-radius:8px; color:var(--mute) }
+  .icon-btn:hover { background:var(--sunk); color:var(--text) }
+
+  /* main */
+  main { flex:1; min-width:0; display:flex; flex-direction:column }
+  .bar { display:flex; align-items:center; gap:14px; padding:14px 24px 12px 28px; min-height:64px }
+  .bar .menu { display:none }
+  .ident { min-width:0; display:grid }
+  .ident h1 { margin:0; font-size:17px; font-weight:650; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .ident span { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .pips { display:flex; align-items:center; gap:8px; padding:5px 11px; background:var(--sunk); border-radius:99px; font-size:12px; color:var(--mute); flex:none }
+  .pips b { display:flex; gap:4px }
+  .pips b i { width:8px; height:8px; border-radius:3px; background:var(--idle) }
+  .pips b i.up { background:var(--up) } .pips b i.down { background:var(--down) } .pips b i.part { background:#d9951a }
+  .spacer { flex:1 }
+  .acts { display:flex; align-items:center; gap:6px }
+  .btn { display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border:1px solid var(--line-strong); background:var(--surface); border-radius:8px; transition:background .15s, border-color .15s }
+  .btn:hover { background:var(--sunk) }
+  .btn:disabled { opacity:.5; cursor:default }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+  .btn.primary:hover { background:color-mix(in srgb,var(--accent) 88%,var(--text)) }
+  .btn.danger:hover { color:var(--down); border-color:color-mix(in srgb,var(--down) 40%,var(--line-strong)) }
+  .btn.quiet { border-color:transparent; background:none; color:var(--mute) }
+  .btn.quiet:hover { background:var(--sunk); color:var(--text) }
+
+  .warn { margin:0 24px 12px 28px; padding:11px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:12px; align-items:flex-start }
+  .warn p { margin:0; flex:1 }
+  .warn .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px }
+  .warn code { font:12px ui-monospace,"Cascadia Mono",Consolas,monospace; padding:1px 7px; border-radius:6px; background:color-mix(in srgb,var(--warn-text) 10%,transparent) }
+  .warn button { border:0; background:none; color:inherit; padding:2px; border-radius:6px; opacity:.75 }
+  .warn button:hover { opacity:1 }
+
+  .stage { flex:1; min-height:0; margin:0 24px 24px 28px; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column }
+  .stage.down { align-items:center; justify-content:center; text-align:center; gap:6px; color:var(--mute); background:var(--bg); border-style:dashed }
+  .stage.down h2 { margin:0; font-size:16px; color:var(--text); font-weight:600 }
+  .stage.down p { margin:0 0 12px }
+
+  /* discover */
+  .page { flex:1; overflow:auto; padding:6px 24px 28px 28px }
+  .page-in { max-width:780px }
+  .page h1 { margin:6px 0 4px; font-size:21px; letter-spacing:-.02em }
+  .page > .page-in > p { margin:0 0 22px; color:var(--mute); max-width:62ch }
+  .tools { display:flex; align-items:center; gap:14px; margin-bottom:6px }
+  .check { display:flex; align-items:center; gap:9px; color:var(--mute); cursor:pointer }
+  .check input { accent-color:var(--accent); width:16px; height:16px; margin:0 }
+  .rows { border-top:1px solid var(--line) }
+  .row { display:flex; align-items:center; gap:14px; padding:14px 2px; border-bottom:1px solid var(--line) }
+  .row .grow { flex:1; min-width:0 }
+  .row .grow div { font-weight:550 }
+  .row .grow small { color:var(--mute); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .added { color:var(--mute); display:inline-flex; align-items:center; gap:6px; padding:6px 12px }
+
+  /* drawer */
+  .scrim { position:fixed; inset:0; background:rgb(15 17 21 / .28); z-index:20; animation:fade .2s var(--ease) }
+  .drawer { position:fixed; right:0; top:0; bottom:0; width:min(380px,100%); background:var(--surface); border-left:1px solid var(--line); box-shadow:var(--pop); z-index:21; padding:24px 24px 20px; display:flex; flex-direction:column; gap:18px; animation:slide .28s var(--ease) }
+  .drawer h2 { margin:0; font-size:17px }
+  .drawer form { display:grid; gap:16px }
+  .field { display:grid; gap:6px } .field label { font-size:12px; color:var(--mute) }
+  .field input[type=text] { padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
+  .field input:focus-visible { outline-offset:0; border-color:var(--accent) }
+  .field small { color:var(--mute) }
+  .drawer .end { display:flex; gap:8px; margin-top:auto; justify-content:flex-end }
+
+  dialog { border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--surface); color:var(--text); width:min(340px,calc(100% - 32px)); box-shadow:var(--pop) }
+  dialog::backdrop { background:rgb(15 17 21 / .32) }
+  dialog h2 { margin:0 0 4px; font-size:16px } dialog p { margin:0 0 16px; color:var(--mute) }
+  dialog input { width:100%; padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg); margin-bottom:16px }
+  dialog .end { display:flex; gap:8px; justify-content:flex-end }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:9px 16px; border-radius:10px; z-index:30; animation:fade .25s var(--ease) }
+
+  @keyframes fade { from { opacity:0 } }
+  @keyframes slide { from { transform:translateX(24px); opacity:0 } }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important } }
+
+  @media (max-width:860px) {
+    aside { position:fixed; inset:0 auto 0 0; transform:translateX(-100%); transition:transform .25s var(--ease); box-shadow:var(--pop) }
+    aside.open { transform:none }
+    .bar { padding:12px 16px } .bar .menu { display:grid }
+    .warn { margin:0 16px 10px } .stage { margin:0 16px 16px } .page { padding:4px 16px 24px }
+    .pips span { display:none }
+  }
+  @media (max-width:560px) { .bar { flex-wrap:wrap; row-gap:8px } .ident { flex:1 } .spacer { display:none } .bar > .acts { order:3; width:100%; padding-left:40px } .ident span { display:none } .acts .btn { padding:6px 11px } }
+
+  .stage.empty { align-items:center; justify-content:center; color:var(--mute); background:var(--bg); border-style:dashed }
+  .stage iframe { flex:1; border:0; width:100%; background:var(--surface) }
+  .drawer .err { color:var(--down); font-size:12px; min-height:1em; margin:0 }
+  .drawer .end .remove { margin-right:auto }
+  .drawer .end .remove:hover { color:var(--down) }
+  .notice { color:var(--mute); padding:14px 2px }
 </style>
 </head>
 <body>
-<aside>
-  <h1>ServiceHub</h1>
-  <button id="discBtn" type="button">＋ Discover on this host</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.5 3.5 2 2L5 13H3v-2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3.5v9l7-4.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 16 16"><rect x="4" y="4" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5v2.8h-2.8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-6.5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 16 16"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.1"/></symbol>
+  <symbol id="i-hub" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.8"/><circle cx="3" cy="4" r="1.2"/><circle cx="13" cy="4" r="1.2"/><circle cx="8" cy="13.5" r="1.2"/><path d="m4 4.8 2.7 2M12 4.8 9.3 6.8M8 9.8v2.5"/></symbol>
+</defs></svg>
+
+<aside id="rail" aria-label="Services">
+  <div class="brand"><i><svg><use href="#i-hub"/></svg></i>ServiceHub
+    <button class="icon-btn theme" id="theme" title="Toggle dark mode" aria-label="Toggle dark mode"><svg><use href="#i-theme"/></svg></button></div>
+  <nav class="nav">
+    <button id="navAdd"><svg><use href="#i-plus"/></svg>Add service</button>
+    <button id="navDisc"><svg><use href="#i-scan"/></svg>Discover on this host</button>
+  </nav>
+  <div class="group">Services</div>
   <div id="list"></div>
-  <form class="add" id="form">
-    <input name="name" placeholder="Name" required>
-    <input name="url" placeholder="http://host:29202" required>
-    <input name="admin_path" placeholder="Admin path (default /admin/)">
-    <label><input type="checkbox" name="direct"> Open directly (no proxy)</label>
-    <button class="primary" id="submit">Add service</button>
-    <button type="button" class="link" id="cancel" hidden>Cancel edit</button>
-    <div id="err"></div>
-  </form>
 </aside>
+
 <main>
-  <div id="bar" hidden><span id="title"></span><a id="pop" target="_blank" rel="noopener">open in tab</a>
-    <span class="ctl" id="ctl" hidden><span class="tag" id="kind"></span><span id="state"></span>
-      <button data-act="start">Start</button><button data-act="stop">Stop</button><button data-act="restart">Restart</button></span></div>
-  <div id="empty">Select a service</div>
-  <div id="warn" role="alert" hidden><span id="warnText"></span><button id="warnClose" title="Close" aria-label="Close warning">✕</button></div>
-  <iframe id="frame" hidden></iframe>
-  <section id="discover" hidden>
-    <h2>Discover on this host</h2>
-    <p class="hint">Docker containers that publish a port on this machine. Add puts one in your list.</p>
-    <div class="tools"><label><input type="checkbox" id="onlyHttp" checked> Only services that answer /health</label><button id="rescan" type="button">Rescan</button></div>
-    <div id="found"></div>
-  </section>
+  <div class="bar">
+    <button class="icon-btn menu" id="menu" aria-label="Open services"><svg><use href="#i-menu"/></svg></button>
+    <div class="ident"><h1 id="title">ServiceHub</h1><span id="sub"></span></div>
+    <div class="pips" id="pips" hidden><b id="pipDots"></b><span id="pipText"></span></div>
+    <div class="spacer"></div>
+    <div class="acts" id="acts" hidden>
+      <span class="acts" id="ctl" hidden>
+        <button class="btn primary" data-act="start"><svg><use href="#i-play"/></svg><span>Start</span></button>
+        <button class="btn danger" data-act="stop"><svg><use href="#i-stop"/></svg><span>Stop</span></button>
+        <button class="btn" data-act="restart"><svg><use href="#i-restart"/></svg><span>Restart</span></button>
+      </span>
+      <button class="icon-btn" id="edit" title="Edit service" aria-label="Edit service"><svg><use href="#i-edit"/></svg></button>
+      <a class="icon-btn" id="pop" title="Open in new tab" aria-label="Open in new tab" target="_blank" rel="noopener"><svg><use href="#i-ext"/></svg></a>
+    </div>
+  </div>
+  <div class="warn" id="warn" role="alert" hidden>
+    <svg style="margin-top:2px"><use href="#i-alert"/></svg>
+    <div style="flex:1"><p id="warnText"></p><div class="chips" id="chips"></div></div>
+    <button id="warnClose" aria-label="Close warning"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <div class="stage empty" id="empty">Select a service</div>
+  <div class="stage" id="stage" hidden><iframe id="frame" title="Service admin"></iframe></div>
+  <div class="page" id="discover" hidden>
+    <div class="page-in">
+      <h1>Discover on this host</h1>
+      <p>Docker containers publishing a port on this machine. Add puts one in your list; nothing is changed on the container.</p>
+      <div class="tools">
+        <label class="check"><input type="checkbox" id="onlyHttp" checked> Only services that answer /health</label>
+        <span class="spacer"></span>
+        <button class="btn" id="rescan"><svg><use href="#i-restart"/></svg>Rescan</button>
+      </div>
+      <div class="rows" id="found"></div>
+    </div>
+  </div>
 </main>
+
+<div id="overlay" hidden>
+  <div class="scrim" id="scrim"></div>
+  <section class="drawer" role="dialog" aria-labelledby="dTitle">
+    <h2 id="dTitle">Add service</h2>
+    <form id="form">
+      <div class="field"><label for="fName">Name</label><input id="fName" name="name" type="text" required></div>
+      <div class="field"><label for="fUrl">URL</label><input id="fUrl" name="url" type="text" required placeholder="http://host.docker.internal:29202"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
+      <div class="field"><label for="fPath">Admin path</label><input id="fPath" name="admin_path" type="text" placeholder="/admin/"></div>
+      <label class="check"><input type="checkbox" name="direct"> Open directly, skip the proxy</label>
+      <p class="err" id="err"></p>
+    </form>
+    <div class="end"><button type="button" class="btn quiet remove" id="remove" hidden>Remove</button><button type="button" class="btn quiet" id="cancel">Cancel</button><button type="submit" form="form" class="btn primary" id="submit">Add service</button></div>
+  </section>
+</div>
+
+<dialog id="pw">
+  <form method="dialog">
+    <h2>Admin password</h2>
+    <p id="pwText"></p>
+    <input type="password" id="pwInput" autocomplete="off" aria-label="Admin password" required>
+    <div class="end"><button class="btn quiet" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="ok">Confirm</button></div>
+  </form>
+</dialog>
+
 <script>
 const $ = s => document.querySelector(s);
-let services = [], selected = null;
+const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
+let services = [], selected = null, view = 'service', editing = null;
 const src = s => (s.direct ? s.url : `/s/${s.id}`) + s.admin_path;
+const hasCtl = s => s.kind === 'container' || s.kind === 'compose';
+const pip = s => s.state === 'running' ? 'up' : s.state === 'exited' || s.state === 'missing' ? 'down' : 'part';
+const dotOf = s => s.up ? 'up' : 'down';
+const hostOf = u => u.replace(/^https?:\/\//, '');
+const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2400); };
 
 async function api(path, opt) {
   const r = await fetch(path, opt);
@@ -98,113 +262,154 @@ async function api(path, opt) {
 function render() {
   const list = $('#list'); list.textContent = '';
   for (const s of services) {
-    const d = document.createElement('div');
-    d.className = 'item' + (s.id === selected ? ' sel' : '');
-    d.innerHTML = '<span class="dot"></span><span class="name"></span><span class="tag"></span><button class="edit" title="Edit" aria-label="Edit">✎</button><button class="del" title="Remove" aria-label="Remove">✕</button>';
-    const tag = d.querySelector('.tag'); const found = s.kind === 'container' || s.kind === 'compose'; tag.textContent = found ? s.kind : ''; tag.hidden = !found;
-    d.querySelector('.dot').classList.toggle('up', s.up);
-    d.querySelector('.name').textContent = s.name;
-    d.onclick = () => select(s.id);
-    d.querySelector('.edit').onclick = e => { e.stopPropagation(); startEdit(s); };
-    d.querySelector('.del').onclick = async e => {
-      e.stopPropagation();
-      if (!confirm(`Remove ${s.name}?`)) return;
-      await api(`/api/services/${s.id}`, {method: 'DELETE'});
-      if (selected === s.id) select(null);
-      if (editing === s.id) stopEdit();
-      refresh();
-    };
-    list.append(d);
+    const b = document.createElement('button');
+    b.className = 'item' + (view === 'service' && s.id === selected ? ' sel' : '');
+    b.innerHTML = `<span class="dot ${dotOf(s)}"></span><span class="name"></span>${hasCtl(s) ? '<span class="tag"></span>' : ''}`;
+    b.querySelector('.name').textContent = s.name;
+    if (hasCtl(s)) b.querySelector('.tag').textContent = s.kind;
+    b.onclick = () => { select(s.id); $('#rail').classList.remove('open'); };
+    list.append(b);
+  }
+  $('#navDisc').classList.toggle('on', view === 'discover');
+}
+
+function showBar(s) {
+  $('#title').textContent = s.name; $('#sub').textContent = hostOf(s.url);
+  $('#acts').hidden = false;
+  const found = hasCtl(s);
+  $('#ctl').hidden = !found; $('#pips').hidden = !found;
+  if (!found) return;
+  const p = pip(s), n = (s.members || []).length || 1, label = {up: 'Running', down: 'Stopped', part: 'Degraded'}[p];
+  $('#pipDots').innerHTML = (s.members.length ? s.members : [s.name]).map(m => `<i class="${p}" title="${m.replace(/"/g, '')}"></i>`).join('');
+  $('#pipText').textContent = s.kind === 'compose' ? `${label} · ${n} containers` : label;
+  for (const b of $('#ctl').querySelectorAll('[data-act]')) {
+    b.hidden = (b.dataset.act === 'start' && p === 'up') || (b.dataset.act !== 'start' && p === 'down');
   }
 }
 
 function select(id) {
-  selected = id;
-  $('#discover').hidden = true; $('#discBtn').classList.remove('sel');
+  selected = id; view = 'service';
   const s = services.find(x => x.id === id);
-  $('#frame').hidden = $('#bar').hidden = !s;
-  if (!s) $('#warn').hidden = true;
-  $('#empty').hidden = !!s;
-  if (s) {
-    $('#title').textContent = `${s.name} — ${s.url}`;
-    $('#pop').href = $('#frame').src = src(s);
-    showCtl(s); showWarn(s);
-  } else $('#frame').removeAttribute('src');
-  localStorage.setItem('hub.sel', id || '');
+  $('#discover').hidden = true;
+  $('#stage').hidden = !s; $('#empty').hidden = !!s;
+  if (!s) { $('#warn').hidden = $('#acts').hidden = $('#pips').hidden = true; $('#title').textContent = 'ServiceHub'; $('#sub').textContent = ''; $('#frame').removeAttribute('src'); }
+  else { showBar(s); $('#pop').href = $('#frame').src = src(s); showWarn(s); }
+  try { localStorage.setItem('hub.sel', id || ''); } catch {}
   render();
-}
-
-async function scan() {
-  const box = $('#found'); box.textContent = 'Scanning…';
-  try {
-    const rows = await api('/api/discover');
-    const only = $('#onlyHttp').checked;
-    const shown = rows.filter(r => !only || r.healthy || r.state !== 'running' || r.added);
-    box.textContent = '';
-    if (!shown.length) box.textContent = only ? 'Nothing found. Untick the filter to see every published port.' : 'No containers publish a port.';
-    for (const r of shown) {
-      const d = document.createElement('div'); d.className = 'row';
-      d.innerHTML = '<span class="dot"></span><span class="name"><span></span><br><small></small></span><span class="tag"></span><button></button>';
-      d.querySelector('.dot').classList.toggle('up', r.healthy);
-      d.querySelector('.name span').textContent = r.name;
-      d.querySelector('small').textContent = `${r.url} · ${r.state}${r.kind === 'compose' ? ' · ' + r.members.length + ' containers' : ''}`;
-      d.querySelector('.tag').textContent = r.kind;
-      const b = d.querySelector('button');
-      b.textContent = r.added ? 'Added' : 'Add'; b.disabled = r.added; b.classList.toggle('add', !r.added);
-      b.onclick = async () => {
-        b.disabled = true;
-        try {
-          const s = await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: r.name, url: r.url})});
-          b.textContent = 'Added'; b.classList.remove('add');
-          await refresh();
-        } catch (x) { b.disabled = false; alert(x.message); }
-      };
-      box.append(d);
-    }
-  } catch (x) { box.textContent = x.message; }
-}
-function openDiscover() {
-  select(null);
-  $('#empty').hidden = true; $('#discover').hidden = false; $('#discBtn').classList.add('sel');
-  scan();
-}
-$('#discBtn').onclick = openDiscover;
-$('#rescan').onclick = scan;
-$('#onlyHttp').onchange = scan;
-
-function showCtl(s) {
-  const found = s.kind === 'container' || s.kind === 'compose';
-  $('#ctl').hidden = !found;
-  $('#state').textContent = s.state || '';
-  $('#kind').textContent = found ? s.kind : '';
-  $('#kind').hidden = !found;
 }
 
 // Shown every time a service backed by a container is selected; the user can close it for that view.
 function showWarn(s) {
-  const list = (s.members || []).join(', ');
+  const list = s.members || [];
   const text = s.kind === 'compose'
-    ? `Start, Stop and Restart apply to every container of compose project "${s.project}" (${list}). This can include helpers such as Ollama or a load balancer, not just the API.`
-    : s.kind === 'container' ? `Start, Stop and Restart act on container "${list}". Stopping it makes this service unavailable until started again.` : '';
+    ? `Start, Stop and Restart apply to every container of compose project "${s.project}". This can include helpers such as Ollama or a load balancer, not just the API.`
+    : s.kind === 'container' ? `Start, Stop and Restart act on this one container. Stopping it makes ${s.name} unavailable until started again.` : '';
   $('#warnText').textContent = text;
+  $('#chips').textContent = '';
+  for (const m of list) { const c = document.createElement('code'); c.textContent = m; $('#chips').append(c); }
   $('#warn').hidden = !text;
 }
 $('#warnClose').onclick = () => $('#warn').hidden = true;
 
 async function refresh() {
   services = await api('/api/services');
-  render();
   const s = services.find(x => x.id === selected);
-  if (s) showCtl(s);
+  if (s && view === 'service') showBar(s);
+  render();
 }
 
-// Password is asked only here, kept for this tab, and re-asked after a 401.
+// Discover
+async function scan() {
+  const box = $('#found'); box.innerHTML = '<div class="notice">Scanning…</div>';
+  try {
+    const rows = await api('/api/discover');
+    const only = $('#onlyHttp').checked;
+    const shown = rows.filter(r => !only || r.healthy || r.state !== 'running' || r.added);
+    box.textContent = '';
+    if (!shown.length) box.innerHTML = `<div class="notice">${only ? 'Nothing found. Untick the filter to see every published port.' : 'No containers publish a port.'}</div>`;
+    for (const r of shown) {
+      const d = document.createElement('div'); d.className = 'row';
+      d.innerHTML = `<span class="dot ${r.healthy ? 'up' : ''}"></span><div class="grow"><div></div><small></small></div><span class="tag"></span>`;
+      d.querySelector('.grow div').textContent = r.name;
+      d.querySelector('small').textContent = `${hostOf(r.url)} · ${r.state}${r.kind === 'compose' ? ' · ' + r.members.length + ' containers' : ''}`;
+      d.querySelector('.tag').textContent = r.kind;
+      const b = document.createElement(r.added ? 'span' : 'button');
+      if (r.added) { b.className = 'added'; b.innerHTML = ICON('check') + 'Added'; }
+      else {
+        b.className = 'btn primary'; b.innerHTML = ICON('plus') + 'Add';
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await api('/api/services', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: r.name, url: r.url})});
+            toast(`${r.name} added`); await refresh(); scan();
+          } catch (x) { b.disabled = false; toast(x.message); }
+        };
+      }
+      d.append(b); box.append(d);
+    }
+  } catch (x) { box.innerHTML = '<div class="notice"></div>'; box.firstChild.textContent = x.message; }
+}
+function openDiscover() {
+  selected = null; view = 'discover';
+  $('#title').textContent = 'Discover'; $('#sub').textContent = 'Same Docker host';
+  $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = $('#stage').hidden = $('#empty').hidden = true;
+  $('#frame').removeAttribute('src');
+  $('#discover').hidden = false;
+  render(); scan(); $('#rail').classList.remove('open');
+}
+$('#navDisc').onclick = openDiscover;
+$('#rescan').onclick = scan;
+$('#onlyHttp').onchange = scan;
+
+// Add / edit drawer: edit fills the form with the service's values and submits PUT instead of POST.
+function openDrawer(s) {
+  editing = s ? s.id : null;
+  const f = $('#form'); f.reset();
+  if (s) { f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct; f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path; }
+  $('#dTitle').textContent = s ? 'Edit service' : 'Add service';
+  $('#submit').textContent = s ? 'Save changes' : 'Add service';
+  $('#remove').hidden = !s; $('#err').textContent = '';
+  $('#overlay').hidden = false; f.name.focus();
+}
+const closeDrawer = () => { $('#overlay').hidden = true; editing = null; };
+$('#scrim').onclick = $('#cancel').onclick = closeDrawer;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#overlay').hidden) closeDrawer(); });
+$('#navAdd').onclick = () => { openDrawer(null); $('#rail').classList.remove('open'); };
+$('#edit').onclick = () => openDrawer(services.find(x => x.id === selected));
+
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  try {
+    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
+    if (f.get('admin_path')) body.admin_path = f.get('admin_path');
+    const url = editing ? `/api/services/${editing}` : '/api/services';
+    const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    closeDrawer(); await refresh(); select(s.id);
+  } catch (x) { $('#err').textContent = x.message; }
+};
+$('#remove').onclick = async () => {
+  const s = services.find(x => x.id === editing);
+  if (!s || !confirm(`Remove ${s.name}?`)) return;
+  try { await api(`/api/services/${s.id}`, {method: 'DELETE'}); } catch (x) { $('#err').textContent = x.message; return; }
+  closeDrawer(); if (selected === s.id) select(null);
+  await refresh();
+};
+
+// Password is asked only for Start / Stop / Restart, kept for this tab, and re-asked after a 401.
+function askPassword(text) {
+  return new Promise(res => {
+    const d = $('#pw'); $('#pwText').textContent = text; $('#pwInput').value = '';
+    d.returnValue = ''; d.addEventListener('close', () => res(d.returnValue === 'ok' ? $('#pwInput').value : null), {once: true});
+    d.showModal();
+  });
+}
 async function control(s, act) {
   const cfg = await api('/api/config');
   if (!cfg.control_enabled) throw new Error('Control disabled: set HUB_ADMIN_PASSWORD on the hub.');
   for (let tries = 0; tries < 3; tries++) {
     let pw = sessionStorage.getItem('hub.pw');
-    if (!pw) { pw = prompt('Admin password'); if (pw === null) throw new Error('cancelled'); }
+    if (!pw) { pw = await askPassword(`${act[0].toUpperCase() + act.slice(1)} ${s.kind === 'compose' ? 'compose project ' + s.project : 'container ' + s.members[0]}.`); if (pw === null) throw new Error('cancelled'); }
     try {
       const r = await api(`/api/services/${s.id}/${act}`, {method: 'POST', headers: {'X-Hub-Password': pw}});
       sessionStorage.setItem('hub.pw', pw);
@@ -216,51 +421,29 @@ async function control(s, act) {
   }
   throw new Error('wrong password');
 }
-
 $('#ctl').onclick = async e => {
-  const act = e.target.dataset.act, s = services.find(x => x.id === selected);
-  if (!act || !s || (act !== 'start' && !confirm(`${act} ${s.name}?`))) return;
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, s = services.find(x => x.id === selected);
+  if (!s || (act !== 'start' && !confirm(`${act} ${s.name}?`))) return;
   const btns = $('#ctl').querySelectorAll('button');
-  btns.forEach(b => b.disabled = true);
-  try { await control(s, act); }
-  catch (x) { if (x.message !== 'cancelled') alert(x.message); }
-  btns.forEach(b => b.disabled = false);
-  refresh();
+  btns.forEach(x => x.disabled = true);
+  try { await control(s, act); toast(`${s.name}: ${act} done`); }
+  catch (x) { if (x.message !== 'cancelled') toast(x.message); }
+  btns.forEach(x => x.disabled = false);
+  await refresh();
   if (act !== 'stop') $('#frame').src = src(s); // reload admin once the service is back
 };
 
-$('#form').onsubmit = async e => {
-  e.preventDefault();
-  const f = new FormData(e.target);
-  try {
-    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
-    if (f.get('admin_path')) body.admin_path = f.get('admin_path');
-    const url = editing ? `/api/services/${editing}` : '/api/services';
-    const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-    stopEdit();
-    await refresh(); select(s.id);
-  } catch (x) { $('#err').textContent = x.message; }
+$('#menu').onclick = () => $('#rail').classList.toggle('open');
+$('#theme').onclick = () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('hub.theme', r.dataset.theme); } catch {}
 };
-
-// Edit mode: the add form is filled with the service's values; submit sends PUT instead of POST.
-let editing = null;
-function startEdit(s) {
-  editing = s.id;
-  const f = $('#form');
-  f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct;
-  f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path;
-  $('#submit').textContent = 'Save changes'; $('#cancel').hidden = false; $('#err').textContent = '';
-  f.name.focus();
-}
-function stopEdit() {
-  editing = null;
-  $('#form').reset();
-  $('#submit').textContent = 'Add service'; $('#cancel').hidden = true; $('#err').textContent = '';
-}
-$('#cancel').onclick = stopEdit;
+try { const t = localStorage.getItem('hub.theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
 
 refresh().then(() => { try { const id = localStorage.getItem('hub.sel'); if (services.some(s => s.id === id)) select(id); } catch {} });
-setInterval(refresh, 15000);
+setInterval(() => refresh().catch(() => {}), 15000);
 </script>
 </body>
 </html>
