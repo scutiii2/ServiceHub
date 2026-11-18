@@ -7,7 +7,8 @@
 <style>
   :root {
     color-scheme: light;
-    --bg:#fbfbfc; --surface:#fff; --sunk:#f3f4f6; --line:#e7e9ee; --line-strong:#d5d9e0;
+    --bg:#f5f7fb; --surface:#fff; --sunk:#f1f3f8; --line:#e3e7ef; --line-strong:#d5d9e0;
+    --chart:#5871dc; --chart-low:#aab8ee;
     --text:#171a21; --mute:#5b6475; --accent:#3451d1; --on-accent:#fff; --accent-soft:#eef1fd;
     --up:#1a7f4b; --down:#c23a3a; --idle:#a3abba;
     --warn-bg:#fff6e5; --warn-line:#f0d9a8; --warn-text:#6b4200;
@@ -17,12 +18,12 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark;
     --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
     --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
-    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677; --chart:#8da2ff; --chart-low:#566aaa;
     --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); } }
   :root[data-theme="dark"] { color-scheme:dark;
     --bg:#0f1115; --surface:#15181e; --sunk:#1b1f27; --line:#262b35; --line-strong:#343a47;
     --text:#e8eaee; --mute:#98a1b0; --accent:#8da2ff; --on-accent:#0c1230; --accent-soft:#1c2340;
-    --up:#4cc38a; --down:#f07878; --idle:#5d6677;
+    --up:#4cc38a; --down:#f07878; --idle:#5d6677; --chart:#8da2ff; --chart-low:#566aaa;
     --warn-bg:#2a2214; --warn-line:#4a3a1a; --warn-text:#f0cf8e; --pop:0 12px 32px -8px rgb(0 0 0 / .6); }
 
   * { box-sizing:border-box }
@@ -37,39 +38,40 @@
   svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex:none }
 
   /* rail */
-  aside { width:248px; flex:none; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:20px 12px 14px; gap:18px; z-index:5 }
-  .brand { display:flex; align-items:center; gap:10px; padding:0 8px; font-weight:650; font-size:15px; letter-spacing:-.01em }
-  .brand i { width:22px; height:22px; border-radius:7px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
-  .brand i svg { width:13px; height:13px; stroke-width:2 }
+  aside { width:238px; flex:none; background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:23px 15px 18px; gap:20px; z-index:5 }
+  .brand { display:flex; align-items:center; gap:10px; padding:0 4px; font-weight:700; font-size:17px; letter-spacing:-.025em }
+  .brand i { width:33px; height:33px; border-radius:9px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
+  .brand i svg { width:18px; height:18px; stroke-width:1.6 }
   .brand .theme { margin-left:auto }
-  .nav { display:grid; gap:2px }
-  .nav button { display:flex; align-items:center; gap:10px; padding:8px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav { display:grid; gap:5px; padding-bottom:15px; border-bottom:1px solid var(--line) }
+  .nav button { display:flex; align-items:center; gap:9px; padding:9px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav #navAdd { background:var(--sunk); color:var(--text); font-weight:600 }
   .nav button:hover { background:var(--sunk); color:var(--text) }
   .nav button.on { background:var(--accent-soft); color:var(--accent) }
-  .group { font-size:12px; color:var(--mute); padding:0 8px; margin:2px 0 -8px }
+  .group { display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--mute); padding:0 9px; margin:0 0 -10px }
   #list { flex:1; overflow:auto; display:grid; gap:2px; align-content:start; margin:0 -4px; padding:0 4px }
-  .item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; position:relative; border:0; background:none; text-align:left; width:100% }
+  .item { display:grid; grid-template-columns:8px minmax(0,1fr) auto; align-items:center; gap:9px; padding:9px; min-height:49px; border-radius:8px; border:0; background:none; text-align:left; width:100% }
   .item:hover { background:var(--sunk) }
   .item.sel { background:var(--accent-soft) }
   .item.sel .name { color:var(--accent); font-weight:600 }
   .dot { width:8px; height:8px; border-radius:50%; background:var(--idle); flex:none }
-  .dot.up { background:var(--up); box-shadow:0 0 0 3px color-mix(in srgb,var(--up) 18%,transparent) }
-  .dot.down { background:var(--down); box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 16%,transparent) }
-  .dot.part { background:#d9951a; box-shadow:0 0 0 3px color-mix(in srgb,#d9951a 20%,transparent) }
-  .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-  .tag { font-size:11px; color:var(--mute); background:var(--sunk); padding:1px 7px; border-radius:99px; flex:none }
-  .item.sel .tag { background:var(--surface) }
-  .foot { font-size:12px; color:var(--mute); padding:0 8px }
+  .dot.up { background:var(--up) }
+  .dot.down { background:var(--down) }
+  .dot.part { background:#c98219 }
+  .name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:560 }
+  .item small { display:block; color:var(--mute); font-size:11px }
+  .tag { font-size:11px; color:var(--mute); flex:none }
+  .foot { display:flex; gap:9px; align-items:center; border-top:1px solid var(--line); padding:14px 5px 0; font-size:12px; color:var(--mute) }
 
   .icon-btn { width:30px; height:30px; display:grid; place-items:center; border:0; background:none; border-radius:8px; color:var(--mute) }
   .icon-btn:hover { background:var(--sunk); color:var(--text) }
 
   /* main */
   main { flex:1; min-width:0; display:flex; flex-direction:column }
-  .bar { display:flex; align-items:center; gap:14px; padding:14px 24px 12px 28px; min-height:64px }
+  .bar { display:flex; align-items:center; gap:15px; padding:20px 28px; min-height:84px }
   .bar .menu { display:none }
   .ident { min-width:0; display:grid }
-  .ident h1 { margin:0; font-size:17px; font-weight:650; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .ident h1 { margin:0; font-size:21px; font-weight:690; letter-spacing:-.026em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .ident span { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .pips { display:flex; align-items:center; gap:8px; padding:5px 11px; background:var(--sunk); border-radius:99px; font-size:12px; color:var(--mute); flex:none }
   .pips b { display:flex; gap:4px }
@@ -86,27 +88,63 @@
   .btn.quiet { border-color:transparent; background:none; color:var(--mute) }
   .btn.quiet:hover { background:var(--sunk); color:var(--text) }
 
-  .warn { margin:0 24px 12px 28px; padding:11px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:12px; align-items:flex-start }
+  .warn { margin:0 28px 16px; padding:12px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:10px; align-items:flex-start; font-size:13px }
   .warn p { margin:0; flex:1 }
-  .warn .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px }
-  .warn code { font:12px ui-monospace,"Cascadia Mono",Consolas,monospace; padding:1px 7px; border-radius:6px; background:color-mix(in srgb,var(--warn-text) 10%,transparent) }
   .warn button { border:0; background:none; color:inherit; padding:2px; border-radius:6px; opacity:.75 }
   .warn button:hover { opacity:1 }
 
-  .stage { flex:1; min-height:0; margin:0 24px 24px 28px; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column }
+  .stage { flex:1; min-height:0; margin:0 28px 28px; border:1px solid var(--line); border-radius:14px; background:var(--surface); overflow:auto; display:flex; flex-direction:column }
   .stage.down { align-items:center; justify-content:center; text-align:center; gap:6px; color:var(--mute); background:var(--bg); border-style:dashed }
   .stage.down h2 { margin:0; font-size:16px; color:var(--text); font-weight:600 }
   .stage.down p { margin:0 0 12px }
+  #stageContent { display:contents }
+  .stage:is(:fullscreen,.expanded) { width:100%; height:100%; margin:0; border:0; border-radius:0; overflow:auto }
+  .stage.expanded { position:fixed; inset:0; z-index:10 }
+  body:has(.stage.expanded) { overflow:hidden }
+  body:has(.stage.expanded) > aside,
+  body:has(.stage.expanded) main > :not(.stage) { visibility:hidden }
+  .fullscreen-bar { position:sticky; top:0; z-index:1; display:flex; justify-content:end; align-self:stretch; padding:8px 16px; background:var(--surface); border-bottom:1px solid var(--line) }
+  .stage.down .fullscreen-bar { position:absolute; inset:0 0 auto }
 
   /* synthetic embedded admin page: deliberately its own style, as a real service would be */
-  .embed { flex:1; overflow:auto; background:#f6f6f2; color:#222; font:14px/1.5 Georgia,serif; padding:28px 34px }
-  .embed h2 { font-size:21px; margin:0 0 4px } .embed small { color:#6c6c63 }
-  .embed .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin:20px 0 }
-  .embed .box { background:#fff; border:1px solid #deded4; padding:14px 16px }
-  .embed .box b { display:block; font-size:24px; font-family:system-ui,sans-serif } .embed .box span { font-size:12px; color:#6c6c63 }
-  .embed table { width:100%; border-collapse:collapse; font:13px system-ui,sans-serif; background:#fff; border:1px solid #deded4 }
-  .embed td,.embed th { padding:8px 12px; border-bottom:1px solid #ecece4; text-align:left }
-  .embed .syn { margin-top:18px; font:12px system-ui; color:#8a8a80 }
+  .frame-bar { display:flex; align-items:center; gap:8px; padding:12px 18px; border-bottom:1px solid var(--line); background:var(--sunk); color:var(--mute); font-size:12px }
+  .frame-bar small { margin-left:auto; color:inherit; font-size:inherit }
+  .embed { padding:25px 28px 28px }
+  .embed h2 { font-size:28px; line-height:1.2; letter-spacing:-.032em; margin:0 0 5px }
+  .embed h3 { font-size:15px; margin:0; letter-spacing:-.014em }
+  .embed p { margin:0; color:var(--mute) }
+  .embed > p { margin-bottom:20px }
+  .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-block:1px solid var(--line); margin:22px 0 24px; padding:17px 0 }
+  .metric { padding:0 20px; border-left:1px solid var(--line) }
+  .metric:first-child { padding-left:0; border:0 }
+  .metric b { display:block; font-size:26px; letter-spacing:-.03em; font-weight:665 }
+  .metric span { font-size:12px; color:var(--mute) }
+  .console-grid { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(205px,1fr); gap:27px }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:13px }
+  .panel-head span { color:var(--mute); font-size:12px }
+  .chart { margin:0; display:grid; grid-template-columns:27px 1fr; gap:5px 8px; color:var(--mute); font-size:11px }
+  .chart-scale { display:flex; flex-direction:column; justify-content:space-between; text-align:right; margin-block:-7px }
+  .chart-plot { height:139px; position:relative; isolation:isolate }
+  .chart-lines, .chart-bars { position:absolute; inset:0; display:flex }
+  .chart-lines { flex-direction:column; justify-content:space-between }
+  .chart-lines i { border-bottom:1px solid var(--line) }
+  .chart-bars { align-items:end; gap:clamp(3px, .72vw, 11px); padding:0 5px 1px }
+  .chart-bars i { width:100%; height:var(--height); background:var(--chart-low); border-radius:3px 3px 0 0 }
+  .chart-bars i:last-child { background:var(--chart) }
+  .chart-time { grid-column:2; display:flex; justify-content:space-between }
+  .config { margin:0 }
+  .config div { display:flex; justify-content:space-between; align-items:baseline; gap:12px; border-top:1px solid var(--line); padding:9px 0 }
+  .config dt { color:var(--mute); font-size:12px }
+  .config dd { margin:0; text-align:right; overflow-wrap:anywhere; font-size:13px; font-weight:600 }
+  .containers { margin-top:25px }
+  .containers table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:13px }
+  .containers th, .containers td { text-align:left; border-top:1px solid var(--line); padding:9px 0; overflow-wrap:anywhere }
+  .containers th { color:var(--mute); font-weight:500; font-size:12px }
+  .containers th + th { width:104px }
+  .containers code { font-size:12px }
+  .container-state { display:flex; align-items:center; gap:8px; padding-left:4px }
+  body[data-detached] aside, body[data-detached] .bar { display:none }
+  body[data-detached] .stage { margin-top:28px }
 
   /* discover */
   .page { flex:1; overflow:auto; padding:6px 24px 28px 28px }
@@ -124,12 +162,12 @@
   .added { color:var(--mute); display:inline-flex; align-items:center; gap:6px; padding:6px 12px }
 
   /* drawer */
-  .scrim { position:fixed; inset:0; background:rgb(15 17 21 / .28); z-index:20; animation:fade .2s var(--ease) }
-  .drawer { position:fixed; right:0; top:0; bottom:0; width:min(380px,100%); background:var(--surface); border-left:1px solid var(--line); box-shadow:var(--pop); z-index:21; padding:24px 24px 20px; display:flex; flex-direction:column; gap:18px; animation:slide .28s var(--ease) }
+  dialog.drawer { inset:0 0 0 auto; margin:0; max-width:none; max-height:none; width:min(420px,100%); height:100%; border:0; border-left:1px solid var(--line); border-radius:0; padding:24px; animation:slide .22s var(--ease) }
+  .drawer[open] { display:flex; flex-direction:column; gap:18px }
   .drawer h2 { margin:0; font-size:17px }
   .drawer form { display:grid; gap:16px }
   .field { display:grid; gap:6px } .field label { font-size:12px; color:var(--mute) }
-  .field input[type=text] { padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
+  .field input[type=text], .field input[type=url] { margin:0; padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
   .field input:focus-visible { outline-offset:0; border-color:var(--accent) }
   .field small { color:var(--mute) }
   .drawer .end { display:flex; gap:8px; margin-top:auto; justify-content:flex-end }
@@ -146,13 +184,29 @@
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important } }
 
   @media (max-width:860px) {
-    aside { position:fixed; inset:0 auto 0 0; transform:translateX(-100%); transition:transform .25s var(--ease); box-shadow:var(--pop) }
-    aside.open { transform:none }
+    aside { position:fixed; inset:0 auto 0 0; visibility:hidden; transform:translateX(-100%); transition:transform .25s var(--ease),visibility .25s; box-shadow:var(--pop) }
+    aside.open { visibility:visible; transform:none }
     .bar { padding:12px 16px } .bar .menu { display:grid }
     .warn { margin:0 16px 10px } .stage { margin:0 16px 16px } .page { padding:4px 16px 24px }
-    .pips span { display:none }
   }
-  @media (max-width:560px) { .bar { flex-wrap:wrap; row-gap:8px } .ident { flex:1 } .spacer { display:none } .acts { order:3; width:100%; padding-left:40px } .ident span { display:none } .acts .btn { padding:6px 11px } }
+  @media (max-width:680px) { .console-grid { grid-template-columns:1fr; gap:23px } }
+  @media (max-width:560px) {
+    .bar { flex-wrap:wrap; row-gap:9px }
+    .ident { flex:1 }
+    .bar .spacer { display:none }
+    .acts { order:3; width:100%; padding-left:4px }
+    .pips { font-size:0; padding:7px 9px }
+    .pips span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%) }
+    .embed { padding:18px 15px }
+    .embed h2 { font-size:23px }
+    .metric { padding:0 8px }
+    .metric b { font-size:20px }
+    .metric span { font-size:11px }
+    .frame-bar { padding-inline:12px }
+    body { min-height:100%; height:auto }
+    main { min-height:100dvh }
+    .stage { overflow:visible }
+  }
 </style>
 </head>
 <body>
@@ -170,6 +224,9 @@
   <symbol id="i-theme" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></symbol>
   <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.1"/></symbol>
   <symbol id="i-hub" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.8"/><circle cx="3" cy="4" r="1.2"/><circle cx="13" cy="4" r="1.2"/><circle cx="8" cy="13.5" r="1.2"/><path d="m4 4.8 2.7 2M12 4.8 9.3 6.8M8 9.8v2.5"/></symbol>
+  <symbol id="i-frame" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.3h11m-8.5 3h2"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 16 16"><path d="M6 3H3v3m7-3h3v3M3 10v3h3m7-3v3h-3"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 16 16"><path d="M3 6h3V3m7 3h-3V3M6 13v-3H3m7 3v-3h3"/></symbol>
 </defs></svg>
 
 <aside id="rail" aria-label="Services">
@@ -179,15 +236,15 @@
     <button id="navAdd"><svg><use href="#i-plus"/></svg>Add service</button>
     <button id="navDisc"><svg><use href="#i-scan"/></svg>Discover on this host</button>
   </nav>
-  <div class="group">Services</div>
+  <div class="group">Services <span id="serviceCount"></span></div>
   <div id="list"></div>
-  <div class="foot">Mockup · synthetic data</div>
+  <div class="foot"><svg aria-hidden="true"><use href="#i-hub"/></svg>Preview · synthetic data</div>
 </aside>
 
 <main>
   <div class="bar">
-    <button class="icon-btn menu" id="menu" aria-label="Open services"><svg><use href="#i-menu"/></svg></button>
-    <div class="ident"><h1 id="title">ServiceHub</h1><span id="sub"></span></div>
+    <button class="icon-btn menu" id="menu" aria-label="Open services" aria-controls="rail" aria-expanded="false"><svg><use href="#i-menu"/></svg></button>
+    <div class="ident"><h1 id="title" tabindex="-1">ServiceHub</h1><span id="sub"></span></div>
     <div class="pips" id="pips" hidden><b id="pipDots"></b><span id="pipText"></span></div>
     <div class="spacer"></div>
     <div class="acts" id="acts" hidden>
@@ -195,15 +252,21 @@
       <button class="btn danger" data-act="stop"><svg><use href="#i-stop"/></svg><span>Stop</span></button>
       <button class="btn" data-act="restart"><svg><use href="#i-restart"/></svg><span>Restart</span></button>
       <button class="icon-btn" id="edit" title="Edit service" aria-label="Edit service"><svg><use href="#i-edit"/></svg></button>
-      <a class="icon-btn" id="pop" title="Open in new tab" aria-label="Open in new tab" href="#" style="text-decoration:none"><svg><use href="#i-ext"/></svg></a>
+      <button class="icon-btn" type="button" id="enterFullscreen" title="Enter fullscreen" aria-label="Enter fullscreen" aria-controls="stage"><svg aria-hidden="true"><use href="#i-expand"/></svg></button>
+      <a class="icon-btn" id="pop" title="Open preview in new tab" aria-label="Open preview in new tab" target="_blank" rel="noopener" style="text-decoration:none"><svg><use href="#i-ext"/></svg></a>
     </div>
   </div>
   <div class="warn" id="warn" role="alert" hidden>
     <svg style="margin-top:2px"><use href="#i-alert"/></svg>
-    <div style="flex:1"><p id="warnText"></p><div class="chips" id="chips"></div></div>
+    <div style="flex:1"><p id="warnText"></p></div>
     <button id="warnClose" aria-label="Close warning"><svg><use href="#i-x"/></svg></button>
   </div>
-  <div class="stage" id="stage"></div>
+  <div class="stage" id="stage">
+    <div class="fullscreen-bar" id="fullscreenBar" hidden>
+      <button class="btn" type="button" id="exitFullscreen"><svg aria-hidden="true"><use href="#i-collapse"/></svg>Exit fullscreen</button>
+    </div>
+    <div id="stageContent"></div>
+  </div>
   <div class="page" id="discover" hidden>
     <div class="page-in">
       <h1>Discover on this host</h1>
@@ -229,7 +292,10 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
+const ICON = n => `<svg aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const escapeText = value => String(value).replace(/[&<>"']/g, char => (
+  {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]
+));
 // All values below are synthetic.
 const SERVICES = [
   {id:'a', name:'MiniCPM 5.2B', url:'http://host.docker.internal:29200', kind:'compose', project:'cnv_minicpm52b_model', members:[['cnv_minicpm52b_model_lb','up'],['cnv_minicpm52b_model_api_1','up'],['cnv_minicpm52b_model_ollama_1','up']]},
@@ -247,19 +313,34 @@ const FOUND = [
   {name:'MiniCPM 5.2B', url:'http://host.docker.internal:29200', kind:'compose', state:'running', healthy:true, n:3, added:true},
   {name:'Piper TTS', url:'http://host.docker.internal:29320', kind:'container', state:'running', healthy:true, added:true},
 ];
-let selected = null, view = 'service', editing = null, pending = null;
-const health = s => { const u = s.members.filter(m => m[1] === 'up').length; return u === s.members.length ? 'up' : u === 0 ? 'down' : 'part'; };
-const word = h => ({up:'Running', down:'Stopped', part:'Degraded'}[h]);
-const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2200); };
+let selected = null, view = 'service', pending = null, nextServiceId = 1;
+const health = s => { const u = s.members.filter(m => m[1] === 'up').length; return !s.members.length ? 'idle' : u === s.members.length ? 'up' : u === 0 ? 'down' : 'part'; };
+const word = h => ({up:'Running', down:'Stopped', part:'Degraded', idle:'Unchecked'}[h]);
+const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.setAttribute('role', 'status'); e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2200); };
+
+const hourlyRequests = [14,8,7,12,15,23,48,58,79,110,89,70,66,88,101,86,92,73,59,43,55,41,32,18];
+const number = new Intl.NumberFormat('en-US');
+const previewId = new URL(location.href).searchParams.get('preview');
+const isDetached = () => SERVICES.some(s => s.id === previewId);
+const previewUrl = id => '?preview=' + encodeURIComponent(id);
+
+function setRail(open) {
+  $('#rail').classList.toggle('open', open);
+  $('#menu').setAttribute('aria-expanded', String(open));
+  $('#menu').setAttribute('aria-label', open ? 'Close services' : 'Open services');
+}
 
 function renderList() {
   $('#list').innerHTML = '';
+  $('#serviceCount').textContent = SERVICES.length;
   for (const s of SERVICES) {
     const b = document.createElement('button');
-    b.className = 'item' + (view === 'service' && s.id === selected ? ' sel' : '');
-    b.innerHTML = `<span class="dot ${health(s)}"></span><span class="name"></span><span class="tag">${s.kind}</span>`;
+    const current = view === 'service' && s.id === selected;
+    b.className = current ? 'item sel' : 'item';
+    if (current) b.setAttribute('aria-current', 'true');
+    b.innerHTML = `<span class="dot ${health(s)}" aria-hidden="true"></span><span><span class="name"></span><small>${word(health(s))}</small></span><span class="tag">${s.kind}</span>`;
     b.querySelector('.name').textContent = s.name;
-    b.onclick = () => { select(s.id); $('#rail').classList.remove('open'); };
+    b.onclick = () => { select(s.id); setRail(false); $('#title').focus(); };
     $('#list').append(b);
   }
   $('#navDisc').classList.toggle('on', view === 'discover');
@@ -267,11 +348,59 @@ function renderList() {
 
 function embed(s) {
   const h = health(s);
-  if (h === 'down') return `<div class="stage down" id="stage"><h2>${s.name} is stopped</h2><p>Nothing is answering on ${s.url.replace('http://','')}.</p><button class="btn primary" data-act="start">${ICON('play')}Start ${s.kind === 'compose' ? 'project' : 'container'}</button></div>`;
-  return `<div class="stage" id="stage"><div class="embed"><h2>${s.name} admin</h2><small>Model service console</small>
-    <div class="grid"><div class="box"><b>412 ms</b><span>median latency, last hour</span></div><div class="box"><b>1,284</b><span>requests today</span></div><div class="box"><b>3.2 GB</b><span>memory in use</span></div></div>
-    <table><tr><th>Setting</th><th>Value</th></tr><tr><td>Model</td><td>${s.name}</td></tr><tr><td>Max tokens</td><td>2,048</td></tr><tr><td>Idle unload</td><td>10 min</td></tr><tr><td>Concurrency</td><td>2</td></tr></table>
-    <div class="syn">Synthetic page standing in for the service's own admin UI, which loads here through the proxy.</div></div></div>`;
+  const name = escapeText(s.name);
+  if (h === 'down') return `<h2>${name} is stopped</h2><p>Nothing is answering on ${escapeText(new URL(s.url).host)}.</p><button class="btn primary" data-act="start">${ICON('play')}Start ${s.kind === 'compose' ? 'project' : 'container'}</button>`;
+
+  const frameLabel = {proxy:'Proxied preview', direct:'Direct preview', new_tab:'New tab'}[s.mode ?? 'proxy'];
+  const frame = `<div class="frame-bar">${ICON('frame')} Service admin <small>${frameLabel}</small></div>`;
+  const config = s.id === 'a'
+    ? [['Model', s.name], ['Max tokens', '2,048'], ['Idle unload', '10 min'], ['Concurrency', '2']]
+    : [['Service', s.name], ['Admin path', s.path ?? '/admin/'], ['Access mode', frameLabel]];
+  const containers = s.members.map(([member, state]) => `<tr><td><code>${escapeText(member)}</code></td>
+    <td><span class="container-state"><i class="dot ${state}" aria-hidden="true"></i>${word(state)}</span></td></tr>`).join('');
+  const title = `<h2>${name} admin</h2><p>Service overview</p>`;
+
+  if (s.mode === 'new_tab' && !isDetached()) {
+    return `${frame}<div class="embed">
+      <h2>${name} admin</h2><p>This service opens in a separate tab.</p>
+      <p style="margin-top:16px"><a class="btn primary" href="${previewUrl(s.id)}" target="_blank" rel="noopener">${ICON('ext')}Open preview in new tab</a></p>
+    </div>`;
+  }
+  return `${frame}<div class="embed">${title}
+    ${s.id === 'a' ? activity() : ''}
+    <div class="console-grid">
+      ${s.id === 'a' ? requestChart() : ''}
+      <section aria-labelledby="configTitle"><div class="panel-head"><h3 id="configTitle">Configuration</h3></div>
+        <dl class="config">${config.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeText(value)}</dd></div>`).join('')}</dl>
+      </section>
+    </div>
+    ${containers ? `<section class="containers" aria-labelledby="containerTitle">
+      <div class="panel-head"><h3 id="containerTitle">${s.kind === 'compose' ? 'Compose containers' : 'Container'}</h3><span>${s.members.filter(([, state]) => state === 'up').length} of ${s.members.length} running</span></div>
+      <table><thead><tr><th scope="col">Container name</th><th scope="col">Status</th></tr></thead><tbody>${containers}</tbody></table>
+    </section>` : ''}
+  </div>`;
+}
+
+function activity() {
+  const total = number.format(hourlyRequests.reduce((sum, count) => sum + count, 0));
+  return `<div class="metrics">
+    <div class="metric"><b>${total}</b><span>Requests in sample day</span></div>
+    <div class="metric"><b>412 ms</b><span>Median latency</span></div>
+    <div class="metric"><b>3.2 GB</b><span>Memory in use</span></div>
+  </div>`;
+}
+
+function requestChart() {
+  const bars = hourlyRequests.map((count, hour) =>
+    `<i style="--height:${count / 120 * 100}%" title="${String(hour).padStart(2, '0')}:00 · ${count} requests"></i>`).join('');
+  return `<section aria-labelledby="chartTitle">
+    <div class="panel-head"><h3 id="chartTitle">Request volume</h3><span>Requests per hour</span></div>
+    <figure class="chart" role="img" aria-label="Sample requests by hour, peaking at 110 at 09:00">
+      <div class="chart-scale" aria-hidden="true"><span>120</span><span>80</span><span>40</span><span>0</span></div>
+      <div class="chart-plot" aria-hidden="true"><div class="chart-lines"><i></i><i></i><i></i><i></i></div><div class="chart-bars">${bars}</div></div>
+      <div class="chart-time" aria-hidden="true"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+    </figure>
+  </section>`;
 }
 
 function select(id) {
@@ -279,30 +408,74 @@ function select(id) {
   const s = SERVICES.find(x => x.id === id), h = health(s);
   $('#discover').hidden = true;
   $('#title').textContent = s.name; $('#sub').textContent = s.url.replace('http://', '');
-  $('#acts').hidden = $('#pips').hidden = false;
-  $('#pipDots').innerHTML = s.members.map(m => `<i class="${m[1]}" title="${m[0]}: ${m[1] === 'up' ? 'running' : 'stopped'}"></i>`).join('');
+  $('#acts').hidden = isDetached();
+  $('#pips').hidden = s.members.length === 0;
+  $('#pipDots').innerHTML = s.members.map(m => `<i class="${m[1]}" title="${escapeText(m[0])}: ${word(m[1])}"></i>`).join('');
   $('#pipText').textContent = s.kind === 'compose' ? `${word(h)} · ${s.members.filter(m => m[1]==='up').length}/${s.members.length} containers` : word(h);
   for (const b of $('#acts').querySelectorAll('[data-act]')) {
-    const a = b.dataset.act; b.hidden = (a === 'start' && h === 'up') || (a !== 'start' && h === 'down');
+    const a = b.dataset.act; b.hidden = h === 'idle' || (a === 'start' && h === 'up') || (a !== 'start' && h === 'down');
   }
-  $('#pop').href = '#';
-  const old = $('#stage'); old.outerHTML = embed(s); $('#stage').hidden = false;
+  $('#pop').hidden = !/^[a-f]$/.test(s.id);
+  $('#pop').href = previewUrl(s.id);
+  $('#stage').classList.toggle('down', h === 'down');
+  $('#stageContent').innerHTML = embed(s);
+  $('#stage').hidden = false;
   showWarn(s); renderList();
 }
 function showWarn(s) {
-  const verb = s.kind === 'compose' ? `Start, Stop and Restart apply to every container of compose project <b>${s.project}</b>. That includes helpers such as Ollama or the load balancer, not only the API.` : `Start, Stop and Restart act on this one container. Stopping it makes ${s.name} unavailable until started again.`;
-  $('#warnText').innerHTML = verb;
-  $('#chips').innerHTML = s.members.map(m => `<code>${m[0]}</code>`).join('');
-  $('#warn').hidden = false;
+  const scope = s.kind === 'compose' ? `all ${s.members.length} containers in ${s.project}` : s.members[0]?.[0];
+  $('#warnText').innerHTML = `<strong>Docker controls</strong> · Start, Stop and Restart affect ${escapeText(scope ?? s.name)}.`;
+  $('#warn').hidden = isDetached() || s.members.length === 0;
 }
 $('#warnClose').onclick = () => $('#warn').hidden = true;
+
+const serviceStage = $('#stage');
+
+function syncFullscreen() {
+  const active = document.fullscreenElement === serviceStage || serviceStage.classList.contains('expanded');
+  const bar = $('#fullscreenBar');
+  if (bar.hidden === !active) return;
+  bar.hidden = !active;
+  $(active ? '#exitFullscreen' : '#enterFullscreen').focus();
+}
+
+$('#enterFullscreen').onclick = async () => {
+  if (document.fullscreenEnabled && serviceStage.requestFullscreen) {
+    try {
+      await serviceStage.requestFullscreen();
+      return;
+    } catch {
+      // Embedded previews can deny native fullscreen. Fill their viewport instead.
+    }
+  }
+  serviceStage.classList.add('expanded');
+  syncFullscreen();
+};
+
+$('#exitFullscreen').onclick = async () => {
+  if (document.fullscreenElement === serviceStage) {
+    await document.exitFullscreen();
+  } else {
+    serviceStage.classList.remove('expanded');
+    syncFullscreen();
+  }
+};
+
+document.addEventListener('fullscreenchange', syncFullscreen);
+serviceStage.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && serviceStage.classList.contains('expanded') && !$('#pw').open) {
+    serviceStage.classList.remove('expanded');
+    syncFullscreen();
+  }
+});
 
 function openDiscover() {
   view = 'discover'; selected = null;
   $('#title').textContent = 'Discover'; $('#sub').textContent = 'Same Docker host';
   $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = true;
   $('#stage').hidden = true; $('#discover').hidden = false;
-  scan(); renderList(); $('#rail').classList.remove('open');
+  scan(); renderList(); setRail(false);
+  $('#title').focus();
 }
 function scan() {
   const only = $('#onlyHttp').checked, rows = FOUND.filter(r => !only || r.healthy || r.added);
@@ -313,34 +486,60 @@ function scan() {
     d.querySelector('.grow div').textContent = r.name;
     const b = document.createElement(r.added ? 'span' : 'button');
     if (r.added) { b.className = 'added'; b.innerHTML = ICON('check') + 'Added'; }
-    else { b.className = 'btn primary'; b.innerHTML = ICON('plus') + 'Add'; b.onclick = () => { r.added = true; SERVICES.push({id:'n'+SERVICES.length, name:r.name, url:r.url, kind:r.kind, project:r.name.toLowerCase().replace(/\W+/g,'_'), members:[[r.name.toLowerCase().replace(/\W+/g,'_'), r.healthy ? 'up':'down']]}); toast(r.name + ' added'); scan(); renderList(); }; }
+    else {
+      b.className = 'btn primary'; b.innerHTML = ICON('plus') + 'Add';
+      b.setAttribute('aria-label', 'Add ' + r.name);
+      b.onclick = () => {
+        r.added = true;
+        const project = r.name.toLowerCase().replace(/\W+/g, '_');
+        const members = Array.from({length:r.n ?? 1}, (_, index) => [
+          r.n ? `${project}_${index + 1}` : project, r.state === 'running' ? 'up' : 'down'
+        ]);
+        SERVICES.push({id:'n' + nextServiceId++, name:r.name, url:r.url, kind:r.kind, project, members});
+        toast(r.name + ' added'); scan(); renderList();
+      };
+    }
     d.append(b); $('#found').append(d);
   }
 }
-$('#onlyHttp').onchange = scan; $('#rescan').onclick = () => { toast('Scanned 14 containers'); scan(); };
+$('#onlyHttp').onchange = scan; $('#rescan').onclick = () => { toast(`Checked ${FOUND.length} sample entries`); scan(); };
 $('#navDisc').onclick = openDiscover;
 
 // add / edit drawer
 function drawer(s) {
-  editing = s;
-  const w = document.createElement('div');
-  w.innerHTML = `<div class="scrim"></div><section class="drawer" role="dialog" aria-label="${s ? 'Edit' : 'Add'} service">
-    <h2>${s ? 'Edit service' : 'Add service'}</h2>
-    <form id="f">
-      <div class="field"><label for="n">Name</label><input id="n" type="text" required value="${s ? s.name : ''}"></div>
-      <div class="field"><label for="u">URL</label><input id="u" type="text" required placeholder="http://host.docker.internal:29202" value="${s ? s.url : ''}"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
-      <div class="field"><label for="p">Admin path</label><input id="p" type="text" placeholder="/admin/"></div>
-      <label class="check"><input type="checkbox"> Open directly, skip the proxy</label>
+  const w = document.createElement('dialog');
+  w.className = 'drawer';
+  w.setAttribute('aria-labelledby', 'drawerTitle');
+  w.innerHTML = `<h2 id="drawerTitle">${s ? 'Edit service' : 'Add service'}</h2>
+    <form id="serviceForm">
+      <div class="field"><label for="n">Name</label><input id="n" name="name" type="text" required autofocus value="${escapeText(s?.name ?? '')}"></div>
+      <div class="field"><label for="u">Base URL</label><input id="u" name="url" type="url" pattern="https?://.+" required value="${escapeText(s?.url ?? '')}"><small>Enter an HTTP or HTTPS URL reachable from the hub.</small></div>
+      <div class="field"><label for="p">Admin path</label><input id="p" name="path" type="text" pattern="/.*" value="${escapeText(s?.path ?? '/admin/')}"></div>
+      <label class="check"><input name="direct" type="checkbox" ${s?.mode === 'direct' ? 'checked' : ''}> Open directly</label>
     </form>
-    <div class="end"><button class="btn quiet" id="dc">Cancel</button><button class="btn primary" id="ds">${s ? 'Save changes' : 'Add service'}</button></div></section>`;
+    <div class="end"><button class="btn quiet" id="dc">Cancel</button><button class="btn primary" type="submit" form="serviceForm">${s ? 'Save changes' : 'Add service'}</button></div>`;
   document.body.append(w);
-  const close = () => w.remove();
-  w.querySelector('.scrim').onclick = w.querySelector('#dc').onclick = close;
-  w.addEventListener('keydown', e => e.key === 'Escape' && close());
-  w.querySelector('#ds').onclick = () => { close(); toast(s ? 'Saved' : 'Added (mockup: not stored)'); };
-  w.querySelector('#n').focus();
+  w.querySelector('#dc').onclick = () => w.close();
+  w.addEventListener('close', () => w.remove(), {once:true});
+  w.querySelector('form').addEventListener('submit', event => {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    const name = values.get('name').trim();
+    if (!name) { w.querySelector('#n').value = ''; w.querySelector('#n').reportValidity(); return; }
+    const service = s ?? {id:'n' + nextServiceId++, kind:'Manual', members:[]};
+    Object.assign(service, {
+      name, url:values.get('url'), path:values.get('path').trim() || '/admin/',
+      mode:values.has('direct') ? 'direct' : 'proxy'
+    });
+    if (!s) SERVICES.push(service);
+    w.close();
+    select(service.id);
+    $('#title').focus();
+    toast(s ? 'Changes saved in preview' : 'Service added to preview');
+  });
+  w.showModal();
 }
-$('#navAdd').onclick = () => { drawer(null); $('#rail').classList.remove('open'); };
+$('#navAdd').onclick = () => { setRail(false); drawer(null); };
 $('#edit').onclick = () => drawer(SERVICES.find(x => x.id === selected));
 
 // control actions: the password is the only gate
@@ -349,21 +548,36 @@ document.addEventListener('click', e => {
   const s = SERVICES.find(x => x.id === selected), act = b.dataset.act;
   pending = act;
   $('#pwText').textContent = `${act[0].toUpperCase() + act.slice(1)} ${s.kind === 'compose' ? s.members.length + ' containers in ' + s.project : s.members[0][0]}. Mockup password: any text.`;
-  $('#pwInput').value = ''; $('#pw').showModal();
+  $('#pwInput').value = ''; $('#pw').returnValue = ''; $('#pw').showModal();
 });
 $('#pw').addEventListener('close', () => {
   if ($('#pw').returnValue !== 'ok') return;
   const s = SERVICES.find(x => x.id === selected);
   s.members.forEach(m => m[1] = pending === 'stop' ? 'down' : 'up');
-  toast(`${s.name}: ${pending} done`); select(s.id);
+  toast(`${s.name} · ${word(health(s))}`); select(s.id);
+  ($('#fullscreenBar').hidden ? $('#title') : $('#exitFullscreen')).focus();
 });
 
-$('#menu').onclick = () => $('#rail').classList.toggle('open');
+$('#menu').onclick = () => {
+  const open = !$('#rail').classList.contains('open');
+  setRail(open);
+  if (open) ($('#list .sel') ?? $('#navAdd')).focus();
+};
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && $('#rail').classList.contains('open')) {
+    setRail(false);
+    $('#menu').focus();
+  }
+});
+document.querySelector('main').addEventListener('click', event => {
+  if (!event.target.closest('#menu')) setRail(false);
+});
 $('#theme').onclick = () => {
   const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   r.dataset.theme = dark ? 'light' : 'dark';
 };
-select('a');
+if (isDetached()) document.body.dataset.detached = '';
+select(isDetached() ? previewId : 'a');
 </script>
 </body>
 </html>
