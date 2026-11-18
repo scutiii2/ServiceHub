@@ -384,6 +384,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#overl
 $('#navAdd').onclick = () => { openDrawer(null); $('#rail').classList.remove('open'); };
 $('#edit').onclick = () => openDrawer(services.find(x => x.id === selected));
 
+// Tab or Right arrow in an empty field takes the grey suggestion (its placeholder), like a shell.
+$('#form').addEventListener('keydown', e => {
+  const i = e.target;
+  if (i.tagName !== 'INPUT' || i.type !== 'text' || i.value || !i.placeholder) return;
+  if (e.key !== 'ArrowRight' && !(e.key === 'Tab' && !e.shiftKey)) return;
+  e.preventDefault();
+  i.value = i.placeholder; i.setSelectionRange(i.value.length, i.value.length);
+});
+
 $('#form').onsubmit = async e => {
   e.preventDefault();
   const f = new FormData(e.target);
