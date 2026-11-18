@@ -12,7 +12,7 @@ This file is the one instruction file for every coding agent; `CLAUDE.md` only i
 
 ## Rules
 - `src/app.py` is the whole backend: JSON registry (`HUB_DATA`, default `data/services.json`), health = `GET <url>/health`, reverse proxy at `/s/<id>/...`.
-- Services must use relative URLs in their admin UI (all current ones do) or the proxy breaks them; "direct" mode skips the proxy.
+- Services must use relative URLs in their admin UI (all current ones do) or the proxy breaks them; "direct" mode skips the proxy; `new_tab` never frames the page and shows an "Open in new tab" link (for pages that send `frame-ancestors 'none'`).
 - Start/stop/restart (`DockerControl`) uses the mounted Docker socket, like Citadel's server_manager. Nothing is configured per service: the container is the one publishing the URL's port (`HostConfig.PortBindings`); if it has a `com.docker.compose.project` label the whole project is the target. Relies on unique ports per service (workspace rule). Services outside Docker get no controls.
 - Auth only on `POST /api/services/{id}/{start|stop|restart}`: header `X-Hub-Password` must equal `HUB_ADMIN_PASSWORD`; empty env = control disabled (403). Everything else is open (LAN only): anyone can register a URL the hub will fetch. The Docker socket is root-equivalent on the host.
 - UI: a closeable warning shows each time a service backed by a container is selected; compose warnings list all affected containers.
