@@ -68,7 +68,8 @@
   /* main */
   main { flex:1; min-width:0; display:flex; flex-direction:column }
   .bar { display:flex; align-items:center; gap:15px; padding:20px 28px; min-height:84px }
-  .bar .menu { display:none }
+  .bar .menu { display:grid; margin-left:-8px }
+  @media (min-width:861px) { body.rail-off > aside { display:none } }
   .ident { min-width:0; display:grid }
   .ident h1 { margin:0; font-size:21px; font-weight:690; letter-spacing:-.026em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .ident span { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
@@ -282,11 +283,24 @@ async function api(path, opt) {
   return r.status === 204 ? null : r.json();
 }
 
+// Wide screens: the rail is a collapsible column (choice kept in this browser). Narrow screens: a slide-over drawer.
+const wide = matchMedia('(min-width:861px)');
+const railOpen = () => wide.matches ? !document.body.classList.contains('rail-off') : $('#rail').classList.contains('open');
 function setRail(open) {
-  $('#rail').classList.toggle('open', open);
+  if (wide.matches) {
+    document.body.classList.toggle('rail-off', !open);
+    try { localStorage.setItem('hub.rail', open ? '1' : '0'); } catch {}
+  } else $('#rail').classList.toggle('open', open);
+  syncRail();
+}
+function syncRail() {
+  const open = railOpen();
   $('#menu').setAttribute('aria-expanded', String(open));
   $('#menu').setAttribute('aria-label', open ? 'Close services' : 'Open services');
 }
+const closeDrawerRail = () => { if (!wide.matches) setRail(false); }; // picking something dismisses the slide-over only
+try { if (localStorage.getItem('hub.rail') === '0') document.body.classList.add('rail-off'); } catch {}
+wide.onchange = syncRail; syncRail();
 
 function render() {
   const list = $('#list'); list.textContent = '';
@@ -301,7 +315,7 @@ function render() {
     b.querySelector('.name').textContent = s.name;
     b.querySelector('small').textContent = word(s);
     if (hasCtl(s)) b.querySelector('.tag').textContent = s.kind;
-    b.onclick = () => { select(s.id); setRail(false); $('#title').focus(); };
+    b.onclick = () => { select(s.id); closeDrawerRail(); $('#title').focus(); };
     list.append(b);
   }
   $('#navDisc').classList.toggle('on', view === 'discover');
@@ -390,7 +404,7 @@ document.addEventListener('keydown', event => {
   if (serviceStage.classList.contains('expanded') && !$('#pw').open && !$('#drawer').open) {
     serviceStage.classList.remove('expanded');
     syncFullscreen();
-  } else if ($('#rail').classList.contains('open')) {
+  } else if (!wide.matches && railOpen()) {
     setRail(false);
     $('#menu').focus();
   }
@@ -441,7 +455,7 @@ function openDiscover() {
   $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = $('#stage').hidden = $('#empty').hidden = $('#tabOnly').hidden = true;
   $('#frame').removeAttribute('src');
   $('#discover').hidden = false;
-  render(); scan(); setRail(false);
+  render(); scan(); closeDrawerRail();
   $('#title').focus();
 }
 $('#navDisc').onclick = openDiscover;
@@ -463,7 +477,7 @@ const closeDrawer = () => drawer.close();
 drawer.addEventListener('close', () => { editing = null; });
 drawer.addEventListener('click', e => { if (e.target === drawer) closeDrawer(); });
 $('#cancel').onclick = closeDrawer;
-$('#navAdd').onclick = () => { setRail(false); openDrawer(null); };
+$('#navAdd').onclick = () => { closeDrawerRail(); openDrawer(null); };
 $('#edit').onclick = () => openDrawer(services.find(x => x.id === selected));
 
 // Tab or Right arrow in an empty field takes the grey suggestion (its placeholder), like a shell.
@@ -533,12 +547,12 @@ $('#ctl').onclick = async e => {
 };
 
 $('#menu').onclick = () => {
-  const open = !$('#rail').classList.contains('open');
+  const open = !railOpen();
   setRail(open);
   if (open) ($('#list .sel') ?? $('#navAdd')).focus();
 };
 document.querySelector('main').addEventListener('click', event => {
-  if (!event.target.closest('#menu')) setRail(false);
+  if (!event.target.closest('#menu')) closeDrawerRail();
 });
 $('#theme').onclick = () => {
   const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
