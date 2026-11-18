@@ -226,6 +226,7 @@
     <form id="form">
       <div class="field"><label for="fName">Name</label><input id="fName" name="name" type="text" required></div>
       <div class="field"><label for="fUrl">URL</label><input id="fUrl" name="url" type="text" required placeholder="http://host.docker.internal:29202"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
+      <div class="field"><label for="fOpen">Link address (optional)</label><input id="fOpen" name="open_url" type="text" placeholder="http://scutiserver1.local:26501"><small>What your browser opens for "new tab" and "directly". Leave empty to use the URL above.</small></div>
       <div class="field"><label for="fPath">Admin path</label><input id="fPath" name="admin_path" type="text" placeholder="/admin/"></div>
       <label class="check"><input type="checkbox" name="direct"> Open directly, skip the proxy</label>
       <label class="check"><input type="checkbox" name="new_tab"> Open in a new tab, never in the frame</label>
@@ -248,7 +249,7 @@
 const $ = s => document.querySelector(s);
 const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
 let services = [], selected = null, view = 'service', editing = null;
-const src = s => (s.direct || s.new_tab ? s.url : `/s/${s.id}`) + s.admin_path;
+const src = s => (s.direct || s.new_tab ? (s.open_url || s.url) : `/s/${s.id}`) + s.admin_path;
 const hasCtl = s => s.kind === 'container' || s.kind === 'compose';
 const pip = s => s.state === 'running' ? 'up' : s.state === 'exited' || s.state === 'missing' ? 'down' : 'part';
 const dotOf = s => s.up ? 'up' : 'down';
@@ -371,7 +372,7 @@ $('#onlyHttp').onchange = scan;
 function openDrawer(s) {
   editing = s ? s.id : null;
   const f = $('#form'); f.reset();
-  if (s) { f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct; f.new_tab.checked = !!s.new_tab; f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path; }
+  if (s) { f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct; f.new_tab.checked = !!s.new_tab; f.open_url.value = s.open_url || ''; f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path; }
   $('#dTitle').textContent = s ? 'Edit service' : 'Add service';
   $('#submit').textContent = s ? 'Save changes' : 'Add service';
   $('#remove').hidden = !s; $('#err').textContent = '';
@@ -387,7 +388,7 @@ $('#form').onsubmit = async e => {
   e.preventDefault();
   const f = new FormData(e.target);
   try {
-    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct'), new_tab: f.has('new_tab')};
+    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct'), new_tab: f.has('new_tab'), open_url: f.get('open_url') || ''};
     if (f.get('admin_path')) body.admin_path = f.get('admin_path');
     const url = editing ? `/api/services/${editing}` : '/api/services';
     const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});

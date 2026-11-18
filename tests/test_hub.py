@@ -140,7 +140,7 @@ def test_match_finds_container_or_compose_by_published_port():
 async def test_edit_service(hub):
     sid = (await hub.post("/api/services", json={"name": "a", "url": "http://x:1"})).json()["id"]
     r = await hub.put(f"/api/services/{sid}", json={"name": "b", "url": "http://y:2/", "admin_path": "ui", "direct": True})
-    assert r.json() == {"id": sid, "name": "b", "url": "http://y:2", "admin_path": "/ui", "direct": True, "new_tab": False}
+    assert r.json() == {"id": sid, "name": "b", "url": "http://y:2", "admin_path": "/ui", "direct": True, "new_tab": False, "open_url": ""}
     assert (await hub.get("/api/services")).json()[0]["name"] == "b"
     assert (await hub.put(f"/api/services/{sid}", json={"name": "b", "url": "nope"})).status_code == 422
     assert (await hub.put("/api/services/missing", json={"name": "b", "url": "http://y:2"})).status_code == 404
@@ -153,6 +153,14 @@ async def test_a_service_can_open_in_a_new_tab_instead_of_the_frame(hub):
     assert next(s for s in (await hub.get("/api/services")).json() if s["id"] == made["id"])["new_tab"] is True
     plain = (await hub.post("/api/services", json={"name": "b", "url": "http://x:2"})).json()
     assert plain["new_tab"] is False
+
+
+async def test_open_url_is_the_address_the_browser_uses(hub):
+    # The hub probes `url` from its container; the browser may only reach another name for the same service.
+    made = (await hub.post("/api/services", json={"name": "a", "url": "http://host.docker.internal:1", "open_url": "http://box.local:1/"})).json()
+    assert made["url"] == "http://host.docker.internal:1" and made["open_url"] == "http://box.local:1"
+    assert (await hub.post("/api/services", json={"name": "b", "url": "http://x:1"})).json()["open_url"] == ""
+    assert (await hub.post("/api/services", json={"name": "c", "url": "http://x:1", "open_url": "nope"})).status_code == 422
 
 
 async def test_discover_lists_unadded_first_and_marks_added(hub):
