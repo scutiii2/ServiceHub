@@ -5,10 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ServiceHub</title>
 <style>
-
   :root {
     color-scheme: light;
-    --bg:#fbfbfc; --surface:#fff; --sunk:#f3f4f6; --line:#e7e9ee; --line-strong:#d5d9e0;
+    --bg:#f5f7fb; --surface:#fff; --sunk:#f1f3f8; --line:#e3e7ef; --line-strong:#d5d9e0;
     --text:#171a21; --mute:#5b6475; --accent:#3451d1; --on-accent:#fff; --accent-soft:#eef1fd;
     --up:#1a7f4b; --down:#c23a3a; --idle:#a3abba;
     --warn-bg:#fff6e5; --warn-line:#f0d9a8; --warn-text:#6b4200;
@@ -38,39 +37,40 @@
   svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex:none }
 
   /* rail */
-  aside { width:248px; flex:none; background:var(--bg); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:20px 12px 14px; gap:18px; z-index:5 }
-  .brand { display:flex; align-items:center; gap:10px; padding:0 8px; font-weight:650; font-size:15px; letter-spacing:-.01em }
-  .brand i { width:22px; height:22px; border-radius:7px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
-  .brand i svg { width:13px; height:13px; stroke-width:2 }
+  aside { width:238px; flex:none; background:var(--surface); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:23px 15px 18px; gap:20px; z-index:5 }
+  .brand { display:flex; align-items:center; gap:10px; padding:0 4px; font-weight:700; font-size:17px; letter-spacing:-.025em }
+  .brand i { width:33px; height:33px; border-radius:9px; background:var(--accent); display:grid; place-items:center; color:var(--on-accent) }
+  .brand i svg { width:18px; height:18px; stroke-width:1.6 }
   .brand .theme { margin-left:auto }
-  .nav { display:grid; gap:2px }
-  .nav button { display:flex; align-items:center; gap:10px; padding:8px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav { display:grid; gap:5px; padding-bottom:15px; border-bottom:1px solid var(--line) }
+  .nav button { display:flex; align-items:center; gap:9px; padding:9px; border:0; background:none; border-radius:8px; color:var(--mute); text-align:left }
+  .nav #navAdd { background:var(--sunk); color:var(--text); font-weight:600 }
   .nav button:hover { background:var(--sunk); color:var(--text) }
   .nav button.on { background:var(--accent-soft); color:var(--accent) }
-  .group { font-size:12px; color:var(--mute); padding:0 8px; margin:2px 0 -8px }
+  .group { display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--mute); padding:0 9px; margin:0 0 -10px }
   #list { flex:1; overflow:auto; display:grid; gap:2px; align-content:start; margin:0 -4px; padding:0 4px }
-  .item { display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; cursor:pointer; position:relative; border:0; background:none; text-align:left; width:100% }
+  .item { display:grid; grid-template-columns:8px minmax(0,1fr) auto; align-items:center; gap:9px; padding:9px; min-height:49px; border-radius:8px; border:0; background:none; text-align:left; width:100% }
   .item:hover { background:var(--sunk) }
   .item.sel { background:var(--accent-soft) }
   .item.sel .name { color:var(--accent); font-weight:600 }
   .dot { width:8px; height:8px; border-radius:50%; background:var(--idle); flex:none }
-  .dot.up { background:var(--up); box-shadow:0 0 0 3px color-mix(in srgb,var(--up) 18%,transparent) }
-  .dot.down { background:var(--down); box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 16%,transparent) }
-  .dot.part { background:#d9951a; box-shadow:0 0 0 3px color-mix(in srgb,#d9951a 20%,transparent) }
-  .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-  .tag { font-size:11px; color:var(--mute); background:var(--sunk); padding:1px 7px; border-radius:99px; flex:none }
-  .item.sel .tag { background:var(--surface) }
-  .foot { font-size:12px; color:var(--mute); padding:0 8px }
+  .dot.up { background:var(--up) }
+  .dot.down { background:var(--down) }
+  .dot.part { background:#c98219 }
+  .name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:560 }
+  .item small { display:block; color:var(--mute); font-size:11px }
+  .tag { font-size:11px; color:var(--mute); flex:none }
+  .foot { display:flex; gap:9px; align-items:center; border-top:1px solid var(--line); padding:14px 5px 0; font-size:12px; color:var(--mute) }
 
-  .icon-btn { width:30px; height:30px; display:grid; place-items:center; border:0; background:none; border-radius:8px; color:var(--mute) }
+  .icon-btn { width:30px; height:30px; display:grid; place-items:center; border:0; background:none; border-radius:8px; color:var(--mute); text-decoration:none }
   .icon-btn:hover { background:var(--sunk); color:var(--text) }
 
   /* main */
   main { flex:1; min-width:0; display:flex; flex-direction:column }
-  .bar { display:flex; align-items:center; gap:14px; padding:14px 24px 12px 28px; min-height:64px }
+  .bar { display:flex; align-items:center; gap:15px; padding:20px 28px; min-height:84px }
   .bar .menu { display:none }
   .ident { min-width:0; display:grid }
-  .ident h1 { margin:0; font-size:17px; font-weight:650; letter-spacing:-.015em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .ident h1 { margin:0; font-size:21px; font-weight:690; letter-spacing:-.026em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .ident span { font-size:12px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .pips { display:flex; align-items:center; gap:8px; padding:5px 11px; background:var(--sunk); border-radius:99px; font-size:12px; color:var(--mute); flex:none }
   .pips b { display:flex; gap:4px }
@@ -78,7 +78,7 @@
   .pips b i.up { background:var(--up) } .pips b i.down { background:var(--down) } .pips b i.part { background:#d9951a }
   .spacer { flex:1 }
   .acts { display:flex; align-items:center; gap:6px }
-  .btn { display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border:1px solid var(--line-strong); background:var(--surface); border-radius:8px; transition:background .15s, border-color .15s }
+  .btn { display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border:1px solid var(--line-strong); background:var(--surface); border-radius:8px; transition:background .15s, border-color .15s; text-decoration:none; color:var(--text) }
   .btn:hover { background:var(--sunk) }
   .btn:disabled { opacity:.5; cursor:default }
   .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
@@ -87,17 +87,24 @@
   .btn.quiet { border-color:transparent; background:none; color:var(--mute) }
   .btn.quiet:hover { background:var(--sunk); color:var(--text) }
 
-  .warn { margin:0 24px 12px 28px; padding:11px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:12px; align-items:flex-start }
+  .warn { margin:0 28px 16px; padding:12px 14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-text); border-radius:10px; display:flex; gap:10px; align-items:flex-start; font-size:13px }
   .warn p { margin:0; flex:1 }
   .warn .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px }
   .warn code { font:12px ui-monospace,"Cascadia Mono",Consolas,monospace; padding:1px 7px; border-radius:6px; background:color-mix(in srgb,var(--warn-text) 10%,transparent) }
   .warn button { border:0; background:none; color:inherit; padding:2px; border-radius:6px; opacity:.75 }
   .warn button:hover { opacity:1 }
 
-  .stage { flex:1; min-height:0; margin:0 24px 24px 28px; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden; display:flex; flex-direction:column }
-  .stage.down { align-items:center; justify-content:center; text-align:center; gap:6px; color:var(--mute); background:var(--bg); border-style:dashed }
+  .stage { flex:1; min-height:0; margin:0 28px 28px; border:1px solid var(--line); border-radius:14px; background:var(--surface); overflow:auto; display:flex; flex-direction:column }
+  .stage.down, .stage.empty { align-items:center; justify-content:center; text-align:center; gap:6px; color:var(--mute); background:var(--bg); border-style:dashed }
   .stage.down h2 { margin:0; font-size:16px; color:var(--text); font-weight:600 }
   .stage.down p { margin:0 0 12px }
+  .stage iframe { flex:1; min-height:0; border:0; width:100%; background:var(--surface) }
+  .stage:is(:fullscreen,.expanded) { width:100%; height:100%; margin:0; border:0; border-radius:0; overflow:auto }
+  .stage.expanded { position:fixed; inset:0; z-index:10 }
+  body:has(.stage.expanded) { overflow:hidden }
+  body:has(.stage.expanded) > aside,
+  body:has(.stage.expanded) main > :not(#stage) { visibility:hidden }
+  .fullscreen-bar { position:sticky; top:0; z-index:1; display:flex; flex:none; justify-content:end; align-self:stretch; padding:8px 16px; background:var(--surface); border-bottom:1px solid var(--line) }
 
   /* discover */
   .page { flex:1; overflow:auto; padding:6px 24px 28px 28px }
@@ -113,17 +120,22 @@
   .row .grow div { font-weight:550 }
   .row .grow small { color:var(--mute); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
   .added { color:var(--mute); display:inline-flex; align-items:center; gap:6px; padding:6px 12px }
+  .notice { color:var(--mute); padding:14px 2px }
 
   /* drawer */
-  .scrim { position:fixed; inset:0; background:rgb(15 17 21 / .28); z-index:20; animation:fade .2s var(--ease) }
-  .drawer { position:fixed; right:0; top:0; bottom:0; width:min(380px,100%); background:var(--surface); border-left:1px solid var(--line); box-shadow:var(--pop); z-index:21; padding:24px 24px 20px; display:flex; flex-direction:column; gap:18px; animation:slide .28s var(--ease) }
+  dialog.drawer { inset:0 0 0 auto; margin:0; max-width:none; max-height:none; width:min(420px,100%); height:100%; border:0; border-left:1px solid var(--line); border-radius:0; padding:24px; animation:slide .22s var(--ease) }
+  .drawer[open] { display:flex; flex-direction:column; gap:18px }
   .drawer h2 { margin:0; font-size:17px }
   .drawer form { display:grid; gap:16px }
   .field { display:grid; gap:6px } .field label { font-size:12px; color:var(--mute) }
-  .field input[type=text] { padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
+  .field input[type=text], .field input[type=url] { margin:0; padding:9px 11px; border:1px solid var(--line-strong); border-radius:8px; background:var(--bg) }
   .field input:focus-visible { outline-offset:0; border-color:var(--accent) }
   .field small { color:var(--mute) }
+  .drawer .check input { padding:0; border:0 }
+  .drawer .err { color:var(--down); font-size:12px; min-height:1em; margin:0 }
   .drawer .end { display:flex; gap:8px; margin-top:auto; justify-content:flex-end }
+  .drawer .end .remove { margin-right:auto }
+  .drawer .end .remove:hover { color:var(--down) }
 
   dialog { border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--surface); color:var(--text); width:min(340px,calc(100% - 32px)); box-shadow:var(--pop) }
   dialog::backdrop { background:rgb(15 17 21 / .32) }
@@ -137,26 +149,21 @@
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important } }
 
   @media (max-width:860px) {
-    aside { position:fixed; inset:0 auto 0 0; transform:translateX(-100%); transition:transform .25s var(--ease); box-shadow:var(--pop) }
-    aside.open { transform:none }
+    aside { position:fixed; inset:0 auto 0 0; visibility:hidden; transform:translateX(-100%); transition:transform .25s var(--ease),visibility .25s; box-shadow:var(--pop) }
+    aside.open { visibility:visible; transform:none }
     .bar { padding:12px 16px } .bar .menu { display:grid }
     .warn { margin:0 16px 10px } .stage { margin:0 16px 16px } .page { padding:4px 16px 24px }
-    .pips span { display:none }
   }
-  @media (max-width:560px) { .bar { flex-wrap:wrap; row-gap:8px } .ident { flex:1 } .spacer { display:none } .bar > .acts { order:3; width:100%; flex-wrap:wrap } .ident span { display:none } .acts .btn { padding:6px 11px } }
-
-  .stage.empty { align-items:center; justify-content:center; color:var(--mute); background:var(--bg); border-style:dashed }
-  .stage iframe { flex:1; min-height:0; border:0; width:100%; background:var(--surface) }
-  .stage:is(:fullscreen,.expanded) { width:100%; height:100%; margin:0; border:0; border-radius:0 }
-  .stage.expanded { position:fixed; inset:0; z-index:10 }
-  body:has(.stage.expanded) { overflow:hidden }
-  body:has(.stage.expanded) > aside,
-  body:has(.stage.expanded) main > :not(#stage) { visibility:hidden }
-  .fullscreen-bar { display:flex; flex:none; justify-content:end; padding:8px 16px; border-bottom:1px solid var(--line) }
-  .drawer .err { color:var(--down); font-size:12px; min-height:1em; margin:0 }
-  .drawer .end .remove { margin-right:auto }
-  .drawer .end .remove:hover { color:var(--down) }
-  .notice { color:var(--mute); padding:14px 2px }
+  @media (max-width:560px) {
+    .bar { flex-wrap:wrap; row-gap:9px }
+    .ident { flex:1 }
+    .bar .spacer { display:none }
+    .acts { order:3; width:100%; padding-left:4px; flex-wrap:wrap }
+    .pips { font-size:0; padding:7px 9px }
+    .pips span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%) }
+    body { min-height:100%; height:auto }
+    main { min-height:100dvh }
+  }
 </style>
 </head>
 <body>
@@ -164,8 +171,6 @@
   <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
   <symbol id="i-scan" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
   <symbol id="i-ext" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7.5 8.5M11 9.5V12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2.5"/></symbol>
-  <symbol id="i-expand" viewBox="0 0 16 16"><path d="M6 3H3v3m7-3h3v3M3 10v3h3m7-3v3h-3"/></symbol>
-  <symbol id="i-collapse" viewBox="0 0 16 16"><path d="M3 6h3V3m7 3h-3V3M6 13v-3H3m7 3v-3h3"/></symbol>
   <symbol id="i-edit" viewBox="0 0 16 16"><path d="m10.5 3.5 2 2L5 13H3v-2z"/></symbol>
   <symbol id="i-x" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
   <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3.5v9l7-4.5z"/></symbol>
@@ -176,6 +181,8 @@
   <symbol id="i-theme" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></symbol>
   <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11.2v.1"/></symbol>
   <symbol id="i-hub" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.8"/><circle cx="3" cy="4" r="1.2"/><circle cx="13" cy="4" r="1.2"/><circle cx="8" cy="13.5" r="1.2"/><path d="m4 4.8 2.7 2M12 4.8 9.3 6.8M8 9.8v2.5"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 16 16"><path d="M6 3H3v3m7-3h3v3M3 10v3h3m7-3v3h-3"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 16 16"><path d="M3 6h3V3m7 3h-3V3M6 13v-3H3m7 3v-3h3"/></symbol>
 </defs></svg>
 
 <aside id="rail" aria-label="Services">
@@ -185,14 +192,15 @@
     <button id="navAdd"><svg><use href="#i-plus"/></svg>Add service</button>
     <button id="navDisc"><svg><use href="#i-scan"/></svg>Discover on this host</button>
   </nav>
-  <div class="group">Services</div>
+  <div class="group">Services <span id="serviceCount"></span></div>
   <div id="list"></div>
+  <div class="foot"><svg aria-hidden="true"><use href="#i-hub"/></svg><span id="footText"></span></div>
 </aside>
 
 <main>
   <div class="bar">
-    <button class="icon-btn menu" id="menu" aria-label="Open services"><svg><use href="#i-menu"/></svg></button>
-    <div class="ident"><h1 id="title">ServiceHub</h1><span id="sub"></span></div>
+    <button class="icon-btn menu" id="menu" aria-label="Open services" aria-controls="rail" aria-expanded="false"><svg><use href="#i-menu"/></svg></button>
+    <div class="ident"><h1 id="title" tabindex="-1">ServiceHub</h1><span id="sub"></span></div>
     <div class="pips" id="pips" hidden><b id="pipDots"></b><span id="pipText"></span></div>
     <div class="spacer"></div>
     <div class="acts" id="acts" hidden>
@@ -233,22 +241,19 @@
   </div>
 </main>
 
-<div id="overlay" hidden>
-  <div class="scrim" id="scrim"></div>
-  <section class="drawer" role="dialog" aria-labelledby="dTitle">
-    <h2 id="dTitle">Add service</h2>
-    <form id="form">
-      <div class="field"><label for="fName">Name</label><input id="fName" name="name" type="text" required></div>
-      <div class="field"><label for="fUrl">URL</label><input id="fUrl" name="url" type="text" required placeholder="http://host.docker.internal:29202"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
-      <div class="field"><label for="fOpen">Link address (optional)</label><input id="fOpen" name="open_url" type="text" placeholder="http://scutiserver1.local:26501"><small>What your browser opens for "new tab" and "directly". Leave empty to use the URL above.</small></div>
-      <div class="field"><label for="fPath">Admin path</label><input id="fPath" name="admin_path" type="text" placeholder="/admin/"></div>
-      <label class="check"><input type="checkbox" name="direct"> Open directly, skip the proxy</label>
-      <label class="check"><input type="checkbox" name="new_tab"> Open in a new tab, never in the frame</label>
-      <p class="err" id="err"></p>
-    </form>
-    <div class="end"><button type="button" class="btn quiet remove" id="remove" hidden>Remove</button><button type="button" class="btn quiet" id="cancel">Cancel</button><button type="submit" form="form" class="btn primary" id="submit">Add service</button></div>
-  </section>
-</div>
+<dialog class="drawer" id="drawer" aria-labelledby="dTitle">
+  <h2 id="dTitle">Add service</h2>
+  <form id="form">
+    <div class="field"><label for="fName">Name</label><input id="fName" name="name" type="text" required></div>
+    <div class="field"><label for="fUrl">URL</label><input id="fUrl" name="url" type="text" required placeholder="http://host.docker.internal:29202"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
+    <div class="field"><label for="fOpen">Link address (optional)</label><input id="fOpen" name="open_url" type="text" placeholder="http://scutiserver1.local:26501"><small>What your browser opens for "new tab" and "directly". Leave empty to use the URL above.</small></div>
+    <div class="field"><label for="fPath">Admin path</label><input id="fPath" name="admin_path" type="text" placeholder="/admin/"></div>
+    <label class="check"><input type="checkbox" name="direct"> Open directly, skip the proxy</label>
+    <label class="check"><input type="checkbox" name="new_tab"> Open in a new tab, never in the frame</label>
+    <p class="err" id="err"></p>
+  </form>
+  <div class="end"><button type="button" class="btn quiet remove" id="remove" hidden>Remove</button><button type="button" class="btn quiet" id="cancel">Cancel</button><button type="submit" form="form" class="btn primary" id="submit">Add service</button></div>
+</dialog>
 
 <dialog id="pw">
   <form method="dialog">
@@ -261,14 +266,15 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
+const ICON = n => `<svg aria-hidden="true"><use href="#i-${n}"/></svg>`;
 let services = [], selected = null, view = 'service', editing = null;
 const src = s => (s.direct || s.new_tab ? (s.open_url || s.url) : `/s/${s.id}`) + s.admin_path;
 const hasCtl = s => s.kind === 'container' || s.kind === 'compose';
 const pip = s => s.state === 'running' ? 'up' : s.state === 'exited' || s.state === 'missing' ? 'down' : 'part';
 const dotOf = s => s.up ? 'up' : 'down';
 const hostOf = u => u.replace(/^https?:\/\//, '');
-const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2400); };
+const word = s => hasCtl(s) ? {up: 'Running', down: 'Stopped', part: 'Degraded'}[pip(s)] : (s.up ? 'Online' : 'Offline');
+const toast = t => { const e = document.createElement('div'); e.className = 'toast'; e.setAttribute('role', 'status'); e.textContent = t; document.body.append(e); setTimeout(() => e.remove(), 2400); };
 
 async function api(path, opt) {
   const r = await fetch(path, opt);
@@ -276,15 +282,26 @@ async function api(path, opt) {
   return r.status === 204 ? null : r.json();
 }
 
+function setRail(open) {
+  $('#rail').classList.toggle('open', open);
+  $('#menu').setAttribute('aria-expanded', String(open));
+  $('#menu').setAttribute('aria-label', open ? 'Close services' : 'Open services');
+}
+
 function render() {
   const list = $('#list'); list.textContent = '';
+  $('#serviceCount').textContent = services.length;
+  $('#footText').textContent = `${services.filter(s => s.up).length} of ${services.length} answering`;
   for (const s of services) {
     const b = document.createElement('button');
-    b.className = 'item' + (view === 'service' && s.id === selected ? ' sel' : '');
-    b.innerHTML = `<span class="dot ${dotOf(s)}"></span><span class="name"></span>${hasCtl(s) ? '<span class="tag"></span>' : ''}`;
+    const current = view === 'service' && s.id === selected;
+    b.className = 'item' + (current ? ' sel' : '');
+    if (current) b.setAttribute('aria-current', 'true');
+    b.innerHTML = `<span class="dot ${dotOf(s)}" aria-hidden="true"></span><span><span class="name"></span><small></small></span>${hasCtl(s) ? '<span class="tag"></span>' : '<span></span>'}`;
     b.querySelector('.name').textContent = s.name;
+    b.querySelector('small').textContent = word(s);
     if (hasCtl(s)) b.querySelector('.tag').textContent = s.kind;
-    b.onclick = () => { select(s.id); $('#rail').classList.remove('open'); };
+    b.onclick = () => { select(s.id); setRail(false); $('#title').focus(); };
     list.append(b);
   }
   $('#navDisc').classList.toggle('on', view === 'discover');
@@ -297,7 +314,7 @@ function showBar(s) {
   const found = hasCtl(s);
   $('#ctl').hidden = !found; $('#pips').hidden = !found;
   if (!found) return;
-  const p = pip(s), n = (s.members || []).length || 1, label = {up: 'Running', down: 'Stopped', part: 'Degraded'}[p];
+  const p = pip(s), n = (s.members || []).length || 1, label = word(s);
   $('#pipDots').innerHTML = (s.members.length ? s.members : [s.name]).map(m => `<i class="${p}" title="${m.replace(/"/g, '')}"></i>`).join('');
   $('#pipText').textContent = s.kind === 'compose' ? `${label} · ${n} containers` : label;
   for (const b of $('#ctl').querySelectorAll('[data-act]')) {
@@ -369,9 +386,13 @@ exitFullscreen.onclick = async () => {
 
 document.addEventListener('fullscreenchange', syncFullscreen);
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && serviceStage.classList.contains('expanded')) {
+  if (event.key !== 'Escape') return;
+  if (serviceStage.classList.contains('expanded') && !$('#pw').open && !$('#drawer').open) {
     serviceStage.classList.remove('expanded');
     syncFullscreen();
+  } else if ($('#rail').classList.contains('open')) {
+    setRail(false);
+    $('#menu').focus();
   }
 });
 
@@ -401,6 +422,7 @@ async function scan() {
       if (r.added) { b.className = 'added'; b.innerHTML = ICON('check') + 'Added'; }
       else {
         b.className = 'btn primary'; b.innerHTML = ICON('plus') + 'Add';
+        b.setAttribute('aria-label', 'Add ' + r.name);
         b.onclick = async () => {
           b.disabled = true;
           try {
@@ -419,13 +441,15 @@ function openDiscover() {
   $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = $('#stage').hidden = $('#empty').hidden = $('#tabOnly').hidden = true;
   $('#frame').removeAttribute('src');
   $('#discover').hidden = false;
-  render(); scan(); $('#rail').classList.remove('open');
+  render(); scan(); setRail(false);
+  $('#title').focus();
 }
 $('#navDisc').onclick = openDiscover;
 $('#rescan').onclick = scan;
 $('#onlyHttp').onchange = scan;
 
 // Add / edit drawer: edit fills the form with the service's values and submits PUT instead of POST.
+const drawer = $('#drawer');
 function openDrawer(s) {
   editing = s ? s.id : null;
   const f = $('#form'); f.reset();
@@ -433,12 +457,13 @@ function openDrawer(s) {
   $('#dTitle').textContent = s ? 'Edit service' : 'Add service';
   $('#submit').textContent = s ? 'Save changes' : 'Add service';
   $('#remove').hidden = !s; $('#err').textContent = '';
-  $('#overlay').hidden = false; f.name.focus();
+  drawer.showModal(); f.name.focus();
 }
-const closeDrawer = () => { $('#overlay').hidden = true; editing = null; };
-$('#scrim').onclick = $('#cancel').onclick = closeDrawer;
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#overlay').hidden) closeDrawer(); });
-$('#navAdd').onclick = () => { openDrawer(null); $('#rail').classList.remove('open'); };
+const closeDrawer = () => drawer.close();
+drawer.addEventListener('close', () => { editing = null; });
+drawer.addEventListener('click', e => { if (e.target === drawer) closeDrawer(); });
+$('#cancel').onclick = closeDrawer;
+$('#navAdd').onclick = () => { setRail(false); openDrawer(null); };
 $('#edit').onclick = () => openDrawer(services.find(x => x.id === selected));
 
 // Tab or Right arrow in an empty field takes the grey suggestion (its placeholder), like a shell.
@@ -458,7 +483,7 @@ $('#form').onsubmit = async e => {
     if (f.get('admin_path')) body.admin_path = f.get('admin_path');
     const url = editing ? `/api/services/${editing}` : '/api/services';
     const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-    closeDrawer(); await refresh(); select(s.id);
+    closeDrawer(); await refresh(); select(s.id); $('#title').focus();
   } catch (x) { $('#err').textContent = x.message; }
 };
 $('#remove').onclick = async () => {
@@ -507,7 +532,14 @@ $('#ctl').onclick = async e => {
   if (act !== 'stop' && !s.new_tab) $('#frame').src = src(s); // reload admin once the service is back
 };
 
-$('#menu').onclick = () => $('#rail').classList.toggle('open');
+$('#menu').onclick = () => {
+  const open = !$('#rail').classList.contains('open');
+  setRail(open);
+  if (open) ($('#list .sel') ?? $('#navAdd')).focus();
+};
+document.querySelector('main').addEventListener('click', event => {
+  if (!event.target.closest('#menu')) setRail(false);
+});
 $('#theme').onclick = () => {
   const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   r.dataset.theme = dark ? 'light' : 'dark';
