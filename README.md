@@ -6,7 +6,7 @@ Central admin UI for the model and tool services. Register each service by URL; 
 - Discover: the "Discover on this host" button lists Docker containers that publish a port (one row per compose project), probes `/health`, and adds one with a click. URLs use `HUB_DOCKER_HOST` (default `host.docker.internal`).
 - Edit: the ✎ button on a sidebar row loads its values into the form; "Save changes" updates it.
 - Health dot: `GET <url>/health`, refreshed every 15 s.
-- Default mode proxies through the hub (`/s/<id>/...`), so the browser only needs the hub port. Tick "Open directly" to iframe the service URL itself.
+- Default mode proxies through the hub (`/s/<id>/...`), so the browser only needs the hub port. Tick "Open directly" to iframe the service URL itself, or "Open in a new tab" for pages that refuse framing (`frame-ancestors 'none'`, like the Citadel admin apps): the hub then shows a link instead of a frame.
 - Start / Stop / Restart need no setup: the hub finds the Docker container that publishes the port in the service URL. If it belongs to a compose project, the whole project is the target (replicas, load balancer, Ollama). A tag shows `container` or `compose`, and a closeable warning lists every container affected each time you select the service. Needs `/var/run/docker.sock` (already in `docker-compose.yml`). Services outside Docker, or on another machine, show no controls. Ports must be unique per service.
 - Auth: only Start / Stop / Restart ask for a password (`HUB_ADMIN_PASSWORD`; empty = control disabled). Listing, opening and adding services need none.
 - Registry is stored in `HUB_DATA` (`data/services.json`; `/data/services.json` in Docker).

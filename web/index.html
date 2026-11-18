@@ -204,6 +204,7 @@
   </div>
   <div class="stage empty" id="empty">Select a service</div>
   <div class="stage" id="stage" hidden><iframe id="frame" title="Service admin"></iframe></div>
+  <div class="stage down" id="tabOnly" hidden><h2>Opens in its own tab</h2><p>This page cannot be shown inside the hub.</p><a class="btn primary" id="tabLink" target="_blank" rel="noopener">Open in new tab</a></div>
   <div class="page" id="discover" hidden>
     <div class="page-in">
       <h1>Discover on this host</h1>
@@ -227,6 +228,7 @@
       <div class="field"><label for="fUrl">URL</label><input id="fUrl" name="url" type="text" required placeholder="http://host.docker.internal:29202"><small>Use host.docker.internal or the LAN IP, not a container hostname.</small></div>
       <div class="field"><label for="fPath">Admin path</label><input id="fPath" name="admin_path" type="text" placeholder="/admin/"></div>
       <label class="check"><input type="checkbox" name="direct"> Open directly, skip the proxy</label>
+      <label class="check"><input type="checkbox" name="new_tab"> Open in a new tab, never in the frame</label>
       <p class="err" id="err"></p>
     </form>
     <div class="end"><button type="button" class="btn quiet remove" id="remove" hidden>Remove</button><button type="button" class="btn quiet" id="cancel">Cancel</button><button type="submit" form="form" class="btn primary" id="submit">Add service</button></div>
@@ -246,7 +248,7 @@
 const $ = s => document.querySelector(s);
 const ICON = n => `<svg><use href="#i-${n}"/></svg>`;
 let services = [], selected = null, view = 'service', editing = null;
-const src = s => (s.direct ? s.url : `/s/${s.id}`) + s.admin_path;
+const src = s => (s.direct || s.new_tab ? s.url : `/s/${s.id}`) + s.admin_path;
 const hasCtl = s => s.kind === 'container' || s.kind === 'compose';
 const pip = s => s.state === 'running' ? 'up' : s.state === 'exited' || s.state === 'missing' ? 'down' : 'part';
 const dotOf = s => s.up ? 'up' : 'down';
@@ -291,9 +293,13 @@ function select(id) {
   selected = id; view = 'service';
   const s = services.find(x => x.id === id);
   $('#discover').hidden = true;
-  $('#stage').hidden = !s; $('#empty').hidden = !!s;
+  $('#stage').hidden = !s || !!s.new_tab; $('#empty').hidden = !!s; $('#tabOnly').hidden = !(s && s.new_tab);
   if (!s) { $('#warn').hidden = $('#acts').hidden = $('#pips').hidden = true; $('#title').textContent = 'ServiceHub'; $('#sub').textContent = ''; $('#frame').removeAttribute('src'); }
-  else { showBar(s); $('#pop').href = $('#frame').src = src(s); showWarn(s); }
+  else {
+    showBar(s); showWarn(s);
+    $('#pop').href = $('#tabLink').href = src(s);
+    if (s.new_tab) $('#frame').removeAttribute('src'); else $('#frame').src = src(s);
+  }
   try { localStorage.setItem('hub.sel', id || ''); } catch {}
   render();
 }
@@ -352,7 +358,7 @@ async function scan() {
 function openDiscover() {
   selected = null; view = 'discover';
   $('#title').textContent = 'Discover'; $('#sub').textContent = 'Same Docker host';
-  $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = $('#stage').hidden = $('#empty').hidden = true;
+  $('#acts').hidden = $('#pips').hidden = $('#warn').hidden = $('#stage').hidden = $('#empty').hidden = $('#tabOnly').hidden = true;
   $('#frame').removeAttribute('src');
   $('#discover').hidden = false;
   render(); scan(); $('#rail').classList.remove('open');
@@ -365,7 +371,7 @@ $('#onlyHttp').onchange = scan;
 function openDrawer(s) {
   editing = s ? s.id : null;
   const f = $('#form'); f.reset();
-  if (s) { f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct; f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path; }
+  if (s) { f.name.value = s.name; f.url.value = s.url; f.direct.checked = s.direct; f.new_tab.checked = !!s.new_tab; f.admin_path.value = s.admin_path === '/admin/' ? '' : s.admin_path; }
   $('#dTitle').textContent = s ? 'Edit service' : 'Add service';
   $('#submit').textContent = s ? 'Save changes' : 'Add service';
   $('#remove').hidden = !s; $('#err').textContent = '';
@@ -381,7 +387,7 @@ $('#form').onsubmit = async e => {
   e.preventDefault();
   const f = new FormData(e.target);
   try {
-    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct')};
+    const body = {name: f.get('name'), url: f.get('url'), direct: f.has('direct'), new_tab: f.has('new_tab')};
     if (f.get('admin_path')) body.admin_path = f.get('admin_path');
     const url = editing ? `/api/services/${editing}` : '/api/services';
     const s = await api(url, {method: editing ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
@@ -431,7 +437,7 @@ $('#ctl').onclick = async e => {
   catch (x) { if (x.message !== 'cancelled') toast(x.message); }
   btns.forEach(x => x.disabled = false);
   await refresh();
-  if (act !== 'stop') $('#frame').src = src(s); // reload admin once the service is back
+  if (act !== 'stop' && !s.new_tab) $('#frame').src = src(s); // reload admin once the service is back
 };
 
 $('#menu').onclick = () => $('#rail').classList.toggle('open');

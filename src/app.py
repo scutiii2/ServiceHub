@@ -37,6 +37,7 @@ class ServiceIn(BaseModel):
     url: str  # base URL of the service, e.g. http://192.168.1.10:29202
     admin_path: str = "/admin/"
     direct: bool = False  # True = iframe straight to the URL instead of through the hub proxy
+    new_tab: bool = False  # True = never frame it: the page only gets an "Open in new tab" link (for pages that refuse framing)
 
     @field_validator("url")
     @classmethod
